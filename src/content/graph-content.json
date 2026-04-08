@@ -1,0 +1,836 @@
+{
+  "version": "2026-04-08",
+  "nodes": [
+    {
+      "id": "differentiation",
+      "kind": "pure_concept",
+      "labels": { "ja": "微分", "en": "Differentiation" },
+      "aliases": ["Derivative"],
+      "shortSummary": {
+        "ja": "変化の速さを記述する。",
+        "en": "Describes rate of change."
+      },
+      "friendlyExplanation": {
+        "ja": "瞬間ごとの変化を捉える道具で、最適化や制御の出発点です。",
+        "en": "Captures instantaneous change, foundational for optimization and control."
+      },
+      "detailedExplanation": {
+        "ja": "f'(x) は接線の傾きを与えます。",
+        "en": "f'(x) gives the local tangent slope."
+      },
+      "mathNotationLatex": {
+        "inline": ["f'(x)"],
+        "block": ["f'(x)=\\lim_{h\\to 0}\\frac{f(x+h)-f(x)}{h}"]
+      },
+      "keywords": [{ "ja": "変化率", "en": "rate of change" }],
+      "references": [
+        {
+          "title": "OpenStax Calculus",
+          "url": "https://openstax.org/details/books/calculus-volume-1"
+        }
+      ],
+      "tags": ["calculus"],
+      "difficultyLevel": 3,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "integration",
+      "kind": "pure_concept",
+      "labels": { "ja": "積分", "en": "Integration" },
+      "aliases": ["Integral"],
+      "shortSummary": {
+        "ja": "小さい量を積み上げる。",
+        "en": "Accumulates small quantities."
+      },
+      "friendlyExplanation": {
+        "ja": "部分の合計から全体量を得る考え方です。",
+        "en": "Builds whole quantities from local parts."
+      },
+      "detailedExplanation": {
+        "ja": "面積、体積、期待値計算に使います。",
+        "en": "Used for area, volume, and expectation."
+      },
+      "mathNotationLatex": { "inline": ["\\int_a^b f(x)dx"] },
+      "keywords": [{ "ja": "累積", "en": "accumulation" }],
+      "references": [
+        { "title": "Paul's Notes", "url": "https://tutorial.math.lamar.edu/" }
+      ],
+      "tags": ["calculus"],
+      "difficultyLevel": 3,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "linear_algebra",
+      "kind": "pure_concept",
+      "labels": { "ja": "線形代数", "en": "Linear Algebra" },
+      "aliases": ["Linear Algebra"],
+      "shortSummary": {
+        "ja": "ベクトルと行列の共通基盤。",
+        "en": "Shared basis of vectors and matrices."
+      },
+      "friendlyExplanation": {
+        "ja": "画像、音、3D、機械学習を同じ記法で扱えます。",
+        "en": "Unifies image, audio, 3D, and ML math."
+      },
+      "detailedExplanation": {
+        "ja": "線形写像・基底・分解が中心です。",
+        "en": "Centers on linear maps, bases, and decompositions."
+      },
+      "keywords": [{ "ja": "線形写像", "en": "linear map" }],
+      "references": [
+        {
+          "title": "MIT 18.06",
+          "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/"
+        }
+      ],
+      "tags": ["algebra"],
+      "difficultyLevel": 3,
+      "utilityProfile": "indirect",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "matrix",
+      "kind": "pure_concept",
+      "labels": { "ja": "行列", "en": "Matrix" },
+      "aliases": ["Matrices"],
+      "shortSummary": {
+        "ja": "変換を表にした表現。",
+        "en": "Tabular form of linear transforms."
+      },
+      "friendlyExplanation": {
+        "ja": "回転や拡大を一括で計算できます。",
+        "en": "Computes rotation and scaling uniformly."
+      },
+      "detailedExplanation": {
+        "ja": "数値計算と GPU 処理の中心です。",
+        "en": "Core representation in numerics and GPU pipelines."
+      },
+      "mathNotationLatex": { "inline": ["A\\mathbf{x}=\\mathbf{b}"] },
+      "keywords": [{ "ja": "連立方程式", "en": "linear systems" }],
+      "references": [
+        {
+          "title": "Khan Academy",
+          "url": "https://www.khanacademy.org/math/linear-algebra"
+        }
+      ],
+      "tags": ["algebra"],
+      "difficultyLevel": 2,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "vector",
+      "kind": "pure_concept",
+      "labels": { "ja": "ベクトル", "en": "Vector" },
+      "aliases": ["Vectors"],
+      "shortSummary": {
+        "ja": "向きと大きさを持つ量。",
+        "en": "Magnitude-and-direction quantity."
+      },
+      "friendlyExplanation": {
+        "ja": "3D 位置や速度の記述に自然です。",
+        "en": "Natural for 3D position and velocity."
+      },
+      "detailedExplanation": {
+        "ja": "内積で角度や距離を計算できます。",
+        "en": "Dot products support angle and distance calculations."
+      },
+      "mathNotationLatex": { "inline": ["\\mathbf{v}\\cdot\\mathbf{w}"] },
+      "keywords": [{ "ja": "内積", "en": "dot product" }],
+      "references": [
+        { "title": "3D Math Primer", "url": "https://gamemath.com/" }
+      ],
+      "tags": ["algebra", "geometry"],
+      "difficultyLevel": 2,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "eigenvalue",
+      "kind": "pure_concept",
+      "labels": { "ja": "固有値", "en": "Eigenvalue" },
+      "aliases": ["Eigenvalue"],
+      "shortSummary": {
+        "ja": "変換の本質的な軸と拡大率。",
+        "en": "Intrinsic axes and scaling of transforms."
+      },
+      "friendlyExplanation": {
+        "ja": "複雑な動きを単純な成分に分けます。",
+        "en": "Decomposes complex transformations."
+      },
+      "detailedExplanation": {
+        "ja": "安定性解析や PCA で使います。",
+        "en": "Used in stability analysis and PCA."
+      },
+      "mathNotationLatex": { "inline": ["A\\mathbf{v}=\\lambda\\mathbf{v}"] },
+      "keywords": [{ "ja": "安定性", "en": "stability" }],
+      "references": [
+        {
+          "title": "MIT 18.06",
+          "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/"
+        }
+      ],
+      "tags": ["spectral"],
+      "difficultyLevel": 4,
+      "utilityProfile": "indirect",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "probability",
+      "kind": "pure_concept",
+      "labels": { "ja": "確率", "en": "Probability" },
+      "aliases": ["Probability Theory"],
+      "shortSummary": {
+        "ja": "不確実さを定量化する。",
+        "en": "Quantifies uncertainty."
+      },
+      "friendlyExplanation": {
+        "ja": "未来が決まらない状況で判断を助けます。",
+        "en": "Supports decisions under uncertainty."
+      },
+      "detailedExplanation": {
+        "ja": "分布や条件付き確率が基礎です。",
+        "en": "Distributions and conditional probability are core."
+      },
+      "mathNotationLatex": { "inline": ["P(A\\mid B)"] },
+      "keywords": [{ "ja": "期待値", "en": "expectation" }],
+      "references": [
+        {
+          "title": "Harvard Stat110",
+          "url": "https://projects.iq.harvard.edu/stat110"
+        }
+      ],
+      "tags": ["probability"],
+      "difficultyLevel": 3,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "statistics",
+      "kind": "pure_concept",
+      "labels": { "ja": "統計", "en": "Statistics" },
+      "aliases": ["Statistical Inference"],
+      "shortSummary": {
+        "ja": "データから推論する。",
+        "en": "Infers from data."
+      },
+      "friendlyExplanation": {
+        "ja": "標本から全体傾向を推定します。",
+        "en": "Estimates population tendencies from samples."
+      },
+      "detailedExplanation": {
+        "ja": "推定と検定で再現性を担保します。",
+        "en": "Estimation and testing support reproducibility."
+      },
+      "keywords": [{ "ja": "推定", "en": "estimation" }],
+      "references": [
+        { "title": "OpenIntro", "url": "https://www.openintro.org/book/os/" }
+      ],
+      "tags": ["data"],
+      "difficultyLevel": 3,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "fourier_transform",
+      "kind": "pure_concept",
+      "labels": { "ja": "フーリエ変換", "en": "Fourier Transform" },
+      "aliases": ["FFT"],
+      "shortSummary": {
+        "ja": "信号を周波数へ分解。",
+        "en": "Decomposes signals by frequency."
+      },
+      "friendlyExplanation": {
+        "ja": "音や画像の圧縮と復元を支えます。",
+        "en": "Supports compression and reconstruction."
+      },
+      "detailedExplanation": {
+        "ja": "時間領域と周波数領域を往復します。",
+        "en": "Maps between time and frequency domains."
+      },
+      "mathNotationLatex": { "inline": ["\\mathcal{F}\\{f(t)\\}"] },
+      "keywords": [{ "ja": "信号処理", "en": "signal processing" }],
+      "references": [
+        { "title": "DSP Guide", "url": "https://www.dspguide.com/" }
+      ],
+      "tags": ["signal"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "differential_equation",
+      "kind": "pure_concept",
+      "labels": { "ja": "微分方程式", "en": "Differential Equation" },
+      "aliases": ["ODE", "PDE"],
+      "shortSummary": {
+        "ja": "変化法則を式で表す。",
+        "en": "Represents laws of change."
+      },
+      "friendlyExplanation": {
+        "ja": "時間変化する現象の予測に使います。",
+        "en": "Used to predict evolving systems."
+      },
+      "detailedExplanation": {
+        "ja": "物理と制御の基盤モデルです。",
+        "en": "A core model in physics and control."
+      },
+      "mathNotationLatex": { "inline": ["\\frac{dy}{dt}=f(t,y)"] },
+      "keywords": [{ "ja": "動的システム", "en": "dynamic systems" }],
+      "references": [
+        {
+          "title": "MIT 18.03",
+          "url": "https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/"
+        }
+      ],
+      "tags": ["modeling"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "finite_field",
+      "kind": "pure_concept",
+      "labels": { "ja": "有限体", "en": "Finite Field" },
+      "aliases": ["Galois Field", "GF"],
+      "shortSummary": {
+        "ja": "有限集合上の代数構造。",
+        "en": "Algebra over finite sets."
+      },
+      "friendlyExplanation": {
+        "ja": "誤り訂正と暗号の実装で重要です。",
+        "en": "Critical in error correction and cryptography."
+      },
+      "detailedExplanation": {
+        "ja": "GF(2^m) が現場実装で多用されます。",
+        "en": "GF(2^m) is widely used in practical systems."
+      },
+      "mathNotationLatex": { "inline": ["\\mathrm{GF}(2^m)"] },
+      "keywords": [{ "ja": "符号理論", "en": "coding theory" }],
+      "references": [
+        {
+          "title": "Error Control Coding",
+          "url": "https://www.pearson.com/en-us/subject-catalog/p/error-control-coding/P200000003576/9780132837965"
+        }
+      ],
+      "tags": ["algebra"],
+      "difficultyLevel": 5,
+      "utilityProfile": "indirect",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "curvature",
+      "kind": "pure_concept",
+      "labels": { "ja": "曲率", "en": "Curvature" },
+      "aliases": ["kappa"],
+      "shortSummary": {
+        "ja": "曲がりの強さを表す量。",
+        "en": "Measures sharpness of bending."
+      },
+      "friendlyExplanation": {
+        "ja": "道路カーブの安全設計に直結します。",
+        "en": "Directly informs safe road curve design."
+      },
+      "detailedExplanation": {
+        "ja": "幾何と設計制約をつなぐ量です。",
+        "en": "Connects geometry and engineering constraints."
+      },
+      "mathNotationLatex": { "inline": ["\\kappa(s)"] },
+      "keywords": [{ "ja": "幾何", "en": "geometry" }],
+      "references": [
+        {
+          "title": "MathWorld Curvature",
+          "url": "https://mathworld.wolfram.com/Curvature.html"
+        }
+      ],
+      "tags": ["geometry"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "clothoid_curve",
+      "kind": "pure_concept",
+      "labels": { "ja": "クロソイド曲線", "en": "Clothoid Curve" },
+      "aliases": ["Euler Spiral"],
+      "shortSummary": {
+        "ja": "曲率が連続的に変わる遷移曲線。",
+        "en": "Transition curve with linearly changing curvature."
+      },
+      "friendlyExplanation": {
+        "ja": "直線とカーブを滑らかにつなぎます。",
+        "en": "Smoothly connects straights and curves."
+      },
+      "detailedExplanation": {
+        "ja": "道路・鉄道の線形設計で使います。",
+        "en": "Used in road and railway alignment."
+      },
+      "mathNotationLatex": { "inline": ["\\kappa(s)=as"] },
+      "keywords": [{ "ja": "道路線形", "en": "road alignment" }],
+      "references": [
+        {
+          "title": "AASHTO Green Book",
+          "url": "https://www.transportation.org/bookstore/"
+        }
+      ],
+      "tags": ["geometry", "civil"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "error_correction",
+      "kind": "application",
+      "industryCategory": "information_theory",
+      "labels": { "ja": "誤り訂正", "en": "Error Correction" },
+      "aliases": ["ECC"],
+      "shortSummary": {
+        "ja": "壊れたデータを復元する技術。",
+        "en": "Technology for recovering corrupted data."
+      },
+      "friendlyExplanation": {
+        "ja": "ノイズがあっても通信・保存の信頼性を保ちます。",
+        "en": "Keeps communication and storage reliable under noise."
+      },
+      "detailedExplanation": {
+        "ja": "Reed-Solomon などの符号が実装されます。",
+        "en": "Implemented with practical codes such as Reed-Solomon."
+      },
+      "keywords": [{ "ja": "符号理論", "en": "coding theory" }],
+      "references": [
+        { "title": "IEEE ITSoc", "url": "https://www.itsoc.org/" }
+      ],
+      "tags": ["reliability"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "qr_code",
+      "kind": "application",
+      "industryCategory": "logistics",
+      "labels": { "ja": "QRコード", "en": "QR Code" },
+      "aliases": ["Quick Response Code"],
+      "shortSummary": {
+        "ja": "誤り耐性を持つ2次元コード。",
+        "en": "Error-tolerant 2D code."
+      },
+      "friendlyExplanation": {
+        "ja": "汚れや欠損があっても読める設計です。",
+        "en": "Designed to remain readable despite damage."
+      },
+      "detailedExplanation": {
+        "ja": "物流、決済、認証で広く使われます。",
+        "en": "Used in logistics, payments, and authentication."
+      },
+      "keywords": [{ "ja": "物流", "en": "logistics" }],
+      "references": [
+        { "title": "QRcode.com", "url": "https://www.qrcode.com/en/" }
+      ],
+      "tags": ["daily-life"],
+      "difficultyLevel": 2,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "raid6",
+      "kind": "application",
+      "industryCategory": "storage",
+      "labels": { "ja": "RAID6", "en": "RAID6" },
+      "aliases": ["Dual-Parity RAID"],
+      "shortSummary": {
+        "ja": "2台同時故障に耐える。",
+        "en": "Survives two-disk failures."
+      },
+      "friendlyExplanation": {
+        "ja": "パリティで障害時の再構成を可能にします。",
+        "en": "Parity enables data reconstruction after failures."
+      },
+      "detailedExplanation": {
+        "ja": "有限体演算が実装を支えます。",
+        "en": "Finite-field arithmetic supports implementation."
+      },
+      "keywords": [{ "ja": "ストレージ", "en": "storage" }],
+      "references": [
+        { "title": "SNIA", "url": "https://www.snia.org/education/what-is" }
+      ],
+      "tags": ["infrastructure"],
+      "difficultyLevel": 3,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "road_design",
+      "kind": "application",
+      "industryCategory": "civil_engineering",
+      "labels": { "ja": "道路設計", "en": "Road Design" },
+      "aliases": ["Geometric Road Design"],
+      "shortSummary": {
+        "ja": "道路線形を安全に設計する。",
+        "en": "Designs safe road geometry."
+      },
+      "friendlyExplanation": {
+        "ja": "カーブのつなぎ方を数学で最適化します。",
+        "en": "Optimizes curve transitions mathematically."
+      },
+      "detailedExplanation": {
+        "ja": "曲率制約と遷移曲線が中心です。",
+        "en": "Curvature constraints and transition curves are central."
+      },
+      "keywords": [{ "ja": "交通安全", "en": "traffic safety" }],
+      "references": [{ "title": "FHWA", "url": "https://highways.dot.gov/" }],
+      "tags": ["infrastructure"],
+      "difficultyLevel": 3,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "medical_imaging",
+      "kind": "application",
+      "industryCategory": "medicine",
+      "labels": { "ja": "医用画像", "en": "Medical Imaging" },
+      "aliases": ["CT", "MRI"],
+      "shortSummary": {
+        "ja": "計測データから体内画像を再構成。",
+        "en": "Reconstructs body images from measurements."
+      },
+      "friendlyExplanation": {
+        "ja": "診断のために見えない情報を可視化します。",
+        "en": "Makes invisible internal information diagnosable."
+      },
+      "detailedExplanation": {
+        "ja": "フーリエ変換と統計推定を使います。",
+        "en": "Uses Fourier transforms and statistical estimation."
+      },
+      "keywords": [{ "ja": "画像再構成", "en": "image reconstruction" }],
+      "references": [
+        { "title": "RadiologyInfo", "url": "https://www.radiologyinfo.org/" }
+      ],
+      "tags": ["healthcare"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "audio_compression",
+      "kind": "application",
+      "industryCategory": "communications",
+      "labels": { "ja": "音声圧縮", "en": "Audio Compression" },
+      "aliases": ["MP3", "AAC"],
+      "shortSummary": {
+        "ja": "音質と容量を両立。",
+        "en": "Balances quality and data size."
+      },
+      "friendlyExplanation": {
+        "ja": "聞こえ方の特性を使って効率化します。",
+        "en": "Exploits hearing characteristics for efficiency."
+      },
+      "detailedExplanation": {
+        "ja": "周波数領域の表現が実装を支えます。",
+        "en": "Frequency-domain representations underpin codecs."
+      },
+      "keywords": [{ "ja": "コーデック", "en": "codec" }],
+      "references": [
+        { "title": "MPEG", "url": "https://www.iso.org/committee/45316.html" }
+      ],
+      "tags": ["media"],
+      "difficultyLevel": 3,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "machine_learning_app",
+      "kind": "application",
+      "industryCategory": "machine_learning",
+      "labels": { "ja": "機械学習", "en": "Machine Learning" },
+      "aliases": ["ML"],
+      "shortSummary": {
+        "ja": "データから予測・分類する。",
+        "en": "Learns prediction/classification from data."
+      },
+      "friendlyExplanation": {
+        "ja": "推薦、認識、異常検知などで使われます。",
+        "en": "Used in recommendations, recognition, and anomaly detection."
+      },
+      "detailedExplanation": {
+        "ja": "確率、統計、線形代数の融合です。",
+        "en": "A fusion of probability, statistics, and linear algebra."
+      },
+      "keywords": [{ "ja": "予測", "en": "prediction" }],
+      "references": [
+        { "title": "ESL", "url": "https://hastie.su.domains/ElemStatLearn/" }
+      ],
+      "tags": ["ai"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "cryptography_app",
+      "kind": "application",
+      "industryCategory": "cryptography",
+      "labels": { "ja": "暗号", "en": "Cryptography" },
+      "aliases": ["Encryption"],
+      "shortSummary": {
+        "ja": "安全な通信と認証を支える。",
+        "en": "Supports secure communication and authentication."
+      },
+      "friendlyExplanation": {
+        "ja": "難しい数学問題で安全性を構成します。",
+        "en": "Builds security from hard mathematical problems."
+      },
+      "detailedExplanation": {
+        "ja": "鍵交換、署名、共通鍵暗号を実装します。",
+        "en": "Implements key exchange, signatures, and symmetric ciphers."
+      },
+      "keywords": [{ "ja": "セキュリティ", "en": "security" }],
+      "references": [
+        {
+          "title": "NIST Crypto",
+          "url": "https://csrc.nist.gov/projects/cryptographic-standards-and-guidelines"
+        }
+      ],
+      "tags": ["security"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "graphics_3d",
+      "kind": "application",
+      "industryCategory": "graphics",
+      "labels": { "ja": "3Dグラフィックス", "en": "3D Graphics" },
+      "aliases": ["CG"],
+      "shortSummary": {
+        "ja": "3D世界を描画する。",
+        "en": "Renders 3D scenes."
+      },
+      "friendlyExplanation": {
+        "ja": "ゲームや CAD の見た目を支えます。",
+        "en": "Powers visuals in games and CAD."
+      },
+      "detailedExplanation": {
+        "ja": "行列・ベクトル変換が核心です。",
+        "en": "Matrix/vector transformations are central."
+      },
+      "keywords": [{ "ja": "GPU", "en": "GPU" }],
+      "references": [
+        { "title": "LearnOpenGL", "url": "https://learnopengl.com/" }
+      ],
+      "tags": ["visualization"],
+      "difficultyLevel": 3,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    },
+    {
+      "id": "control_engineering",
+      "kind": "application",
+      "industryCategory": "manufacturing",
+      "labels": { "ja": "制御工学", "en": "Control Engineering" },
+      "aliases": ["Feedback Control"],
+      "shortSummary": {
+        "ja": "状態を目標値に保つ。",
+        "en": "Keeps system state near target."
+      },
+      "friendlyExplanation": {
+        "ja": "温度制御からロボットまで使われます。",
+        "en": "Used from thermostats to robotics."
+      },
+      "detailedExplanation": {
+        "ja": "安定性解析と制御器設計が中心です。",
+        "en": "Centered on stability analysis and controller design."
+      },
+      "keywords": [{ "ja": "安定化", "en": "stabilization" }],
+      "references": [
+        { "title": "Feedback Systems", "url": "https://fbsbook.org/" }
+      ],
+      "tags": ["industry"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "reviewed"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-linear-matrix",
+      "source": "linear_algebra",
+      "target": "matrix",
+      "relation": "related_to"
+    },
+    {
+      "id": "edge-linear-vector",
+      "source": "linear_algebra",
+      "target": "vector",
+      "relation": "related_to"
+    },
+    {
+      "id": "edge-matrix-eigen",
+      "source": "matrix",
+      "target": "eigenvalue",
+      "relation": "prerequisite_of"
+    },
+    {
+      "id": "edge-probability-statistics",
+      "source": "probability",
+      "target": "statistics",
+      "relation": "prerequisite_of"
+    },
+    {
+      "id": "edge-diffint",
+      "source": "differentiation",
+      "target": "integration",
+      "relation": "related_to"
+    },
+    {
+      "id": "edge-diff-de",
+      "source": "differentiation",
+      "target": "differential_equation",
+      "relation": "prerequisite_of"
+    },
+    {
+      "id": "edge-int-fourier",
+      "source": "integration",
+      "target": "fourier_transform",
+      "relation": "prerequisite_of"
+    },
+    {
+      "id": "edge-curvature-clothoid",
+      "source": "curvature",
+      "target": "clothoid_curve",
+      "relation": "prerequisite_of"
+    },
+    {
+      "id": "edge-clothoid-road",
+      "source": "clothoid_curve",
+      "target": "road_design",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-curvature-road",
+      "source": "curvature",
+      "target": "road_design",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-finite-err",
+      "source": "finite_field",
+      "target": "error_correction",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-finite-crypto",
+      "source": "finite_field",
+      "target": "cryptography_app",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-err-qr",
+      "source": "error_correction",
+      "target": "qr_code",
+      "relation": "enables"
+    },
+    {
+      "id": "edge-err-raid",
+      "source": "error_correction",
+      "target": "raid6",
+      "relation": "enables"
+    },
+    {
+      "id": "edge-fourier-audio",
+      "source": "fourier_transform",
+      "target": "audio_compression",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-fourier-med",
+      "source": "fourier_transform",
+      "target": "medical_imaging",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-linear-ml",
+      "source": "linear_algebra",
+      "target": "machine_learning_app",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-stat-ml",
+      "source": "statistics",
+      "target": "machine_learning_app",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-prob-ml",
+      "source": "probability",
+      "target": "machine_learning_app",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-vector-graphics",
+      "source": "vector",
+      "target": "graphics_3d",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-matrix-graphics",
+      "source": "matrix",
+      "target": "graphics_3d",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-de-control",
+      "source": "differential_equation",
+      "target": "control_engineering",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-eigen-control",
+      "source": "eigenvalue",
+      "target": "control_engineering",
+      "relation": "used_in"
+    },
+    {
+      "id": "edge-control-road",
+      "source": "control_engineering",
+      "target": "road_design",
+      "relation": "enables"
+    },
+    {
+      "id": "edge-audio-ml",
+      "source": "audio_compression",
+      "target": "machine_learning_app",
+      "relation": "related_to"
+    },
+    {
+      "id": "edge-ml-med",
+      "source": "machine_learning_app",
+      "target": "medical_imaging",
+      "relation": "example_of"
+    }
+  ]
+}

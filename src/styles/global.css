@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+
+:root {
+  font-family: 'IBM Plex Sans', 'Noto Sans JP', sans-serif;
+  color: #0f172a;
+  background-color: #f6f8fb;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.bg-app {
+  background:
+    radial-gradient(
+      circle at 85% 15%,
+      rgba(30, 136, 229, 0.16),
+      transparent 34%
+    ),
+    radial-gradient(circle at 20% 80%, rgba(0, 128, 96, 0.14), transparent 30%),
+    linear-gradient(150deg, #f7fafc 0%, #eef4fb 100%);
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #0369a1;
+  outline-offset: 2px;
+}
