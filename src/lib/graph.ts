@@ -31,7 +31,7 @@ export const filterGraph = ({
   query: string;
   kindFilter: Set<'pure_concept' | 'application'>;
   industryFilter: Set<string>;
-}): { nodes: GraphNode[]; edges: GraphEdge[] } => {
+}): { nodes: GraphNode[]; edges: GraphEdge[]; searchMatchedNodeIds: Set<string> } => {
   const normalizedQuery = query.trim().toLowerCase();
   const nodes = content.nodes.filter((node) => {
     if (
@@ -49,18 +49,24 @@ export const filterGraph = ({
     ) {
       return false;
     }
-    if (normalizedQuery.length === 0) {
-      return true;
-    }
-    return getNodeSearchText(node).includes(normalizedQuery);
+    return true;
   });
+
+  const searchMatchedNodeIds =
+    normalizedQuery.length === 0
+      ? new Set<string>()
+      : new Set(
+          nodes
+            .filter((node) => getNodeSearchText(node).includes(normalizedQuery))
+            .map((node) => node.id)
+        );
 
   const visibleIds = new Set(nodes.map((node) => node.id));
   const edges = content.edges.filter(
     (edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target)
   );
 
-  return { nodes, edges };
+  return { nodes, edges, searchMatchedNodeIds };
 };
 
 export const createAdjacencyIndex = (

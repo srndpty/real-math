@@ -18,6 +18,7 @@ import { INDUSTRY_CATEGORIES, type Locale } from './content/types';
 import {
   createAdjacencyIndex,
   filterGraph,
+  getNodeSearchText,
   getHighlightedNodeIds,
   isSupportedLocale
 } from './lib/graph';
@@ -79,12 +80,33 @@ const AppPage = () => {
     () =>
       filterGraph({
         content: graphContent,
-        query,
+        // Keep graph topology stable while typing in search.
+        query: '',
         kindFilter,
         industryFilter
       }),
-    [industryFilter, kindFilter, query]
+    [industryFilter, kindFilter]
   );
+  const isSearchActive = query.trim().length > 0;
+  const searchMatchedNodeIds = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return new Set<string>();
+    }
+    return new Set(
+      filtered.nodes
+        .filter((node) => getNodeSearchText(node).includes(normalizedQuery))
+        .map((node) => node.id)
+    );
+  }, [filtered.nodes, query]);
+  const listedNodes = useMemo(() => {
+    if (!isSearchActive) {
+      return filtered.nodes;
+    }
+    return filtered.nodes.filter((node) =>
+      searchMatchedNodeIds.has(node.id)
+    );
+  }, [filtered.nodes, isSearchActive, searchMatchedNodeIds]);
 
   const adjacency = useMemo(
     () => createAdjacencyIndex(filtered.edges),
@@ -206,7 +228,7 @@ const AppPage = () => {
           <Legend />
           <NodeList
             locale={locale}
-            nodes={filtered.nodes}
+            nodes={listedNodes}
             selectedNodeId={selectedNode?.id ?? null}
             onSelectNode={selectNode}
           />
@@ -224,6 +246,8 @@ const AppPage = () => {
               edges={filtered.edges}
               selectedNodeId={selectedNode?.id ?? null}
               highlightedNodeIds={highlightedNodeIds}
+              searchMatchedNodeIds={searchMatchedNodeIds}
+              isSearchActive={isSearchActive}
               onSelectNode={selectNode}
               onBackgroundClick={closePanel}
             />
@@ -241,7 +265,7 @@ const AppPage = () => {
               )}
               <div
                 data-testid="detail-panel-shell"
-                className="fixed inset-x-0 bottom-0 z-30 h-[56vh] overflow-hidden rounded-t-2xl border border-slate-200 bg-white lg:absolute lg:inset-y-0 lg:right-0 lg:h-full lg:w-[44%] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:border-l"
+                className="fixed inset-x-0 bottom-0 z-30 h-[56vh] overflow-hidden rounded-t-2xl border border-slate-200 bg-white lg:absolute lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[44%] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:border-l"
               >
                 <DetailPanel
                   locale={locale}

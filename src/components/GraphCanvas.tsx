@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { forceCollide } from 'd3-force';
+import { forceCollide, forceManyBody } from 'd3-force';
 import ForceGraph2D from 'react-force-graph-2d';
 import type { GraphEdge, GraphNode, Locale } from '../content/types';
 import { getNodeLabel } from '../lib/graph';
@@ -17,6 +17,8 @@ type GraphCanvasProps = {
   edges: GraphEdge[];
   selectedNodeId: string | null;
   highlightedNodeIds: Set<string>;
+  searchMatchedNodeIds: Set<string>;
+  isSearchActive: boolean;
   onSelectNode: (nodeId: string) => void;
   onBackgroundClick: () => void;
 };
@@ -39,16 +41,18 @@ type BubbleMetrics = {
   label: string;
 };
 
-const MIN_FONT_SIZE = 10;
-const MAX_FONT_SIZE = 14;
-const BUBBLE_HEIGHT = 30;
-const BUBBLE_PADDING_X = 14;
-const COLLISION_PADDING = 7;
-const EXTRA_LINK_GAP = 20;
+const MIN_FONT_SIZE = 9;
+const MAX_FONT_SIZE = 12;
+const BUBBLE_HEIGHT = 24;
+const BUBBLE_PADDING_X = 10;
+const COLLISION_PADDING = 16;
+const EXTRA_LINK_GAP = 42;
 
 type ForceGraphHandle = {
   d3Force: (name: string, force?: unknown) => unknown;
   d3ReheatSimulation: () => void;
+  centerAt: (x?: number, y?: number, transitionMs?: number) => void;
+  zoom: (k?: number, transitionMs?: number) => number | void;
   zoomToFit: (transitionMs?: number, padding?: number) => void;
 };
 
@@ -66,7 +70,7 @@ const measureBubble = (
   const label = getNodeLabel(node, locale);
   const fontSize = Math.max(
     MIN_FONT_SIZE,
-    Math.min(MAX_FONT_SIZE, 13 / globalScale)
+    Math.min(MAX_FONT_SIZE, 12 / globalScale)
   );
   ctx.font = `600 ${fontSize}px "IBM Plex Sans", "Noto Sans JP", sans-serif`;
   const textWidth = ctx.measureText(label).width;
@@ -152,11 +156,14 @@ export const GraphCanvas = ({
   edges,
   selectedNodeId,
   highlightedNodeIds,
+  searchMatchedNodeIds,
+  isSearchActive,
   onSelectNode,
   onBackgroundClick
 }: GraphCanvasProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const graphRef = useRef<ForceGraphHandle | null>(null);
+  const hasInitialFitRef = useRef(false);
   const [size, setSize] = useState({ width: 300, height: 300 });
 
   useEffect(() => {
@@ -193,6 +200,29 @@ export const GraphCanvas = ({
     [edges, nodes]
   );
 
+  const getRenderedEdgeColor = (runtimeEdge: RuntimeEdge): string => {
+    const source = resolveNode(runtimeEdge.source);
+    const target = resolveNode(runtimeEdge.target);
+    const sourceId = source?.id ?? String(runtimeEdge.source);
+    const targetId = target?.id ?? String(runtimeEdge.target);
+    const isDimmedBySelection =
+      Boolean(selectedNodeId) &&
+      highlightedNodeIds.size > 0 &&
+      (!highlightedNodeIds.has(sourceId) || !highlightedNodeIds.has(targetId));
+
+    const baseColor = isSearchActive
+      ? '#334155'
+      : getEdgeColor(runtimeEdge, source, target);
+
+    if (isDimmedBySelection) {
+      return `${baseColor}55`;
+    }
+    if (isSearchActive) {
+      return `${baseColor}CC`;
+    }
+    return baseColor;
+  };
+
   useEffect(() => {
     if (!graphRef.current) {
       return;
@@ -200,15 +230,54 @@ export const GraphCanvas = ({
     graphRef.current.d3Force(
       'collide',
       forceCollide<RuntimeNode>((node) => node.collisionRadius ?? 28).iterations(
-        3
+        5
       )
     );
+    graphRef.current.d3Force(
+      'charge',
+      forceManyBody<RuntimeNode>().strength(-120).distanceMax(420)
+    );
     graphRef.current.d3ReheatSimulation();
+    if (hasInitialFitRef.current) {
+      return;
+    }
+    hasInitialFitRef.current = true;
     const timerId = window.setTimeout(() => {
       graphRef.current?.zoomToFit(500, 64);
     }, 280);
     return () => window.clearTimeout(timerId);
   }, [graphData]);
+
+  useEffect(() => {
+    if (!selectedNodeId || !graphRef.current) {
+      return;
+    }
+
+    const centerSelectedNode = () => {
+      const targetNode = graphData.nodes.find(
+        (node) => node.id === selectedNodeId
+      ) as RuntimeNode | undefined;
+      if (
+        !targetNode ||
+        typeof targetNode.x !== 'number' ||
+        typeof targetNode.y !== 'number'
+      ) {
+        return false;
+      }
+      const currentZoom = graphRef.current?.zoom();
+      graphRef.current?.centerAt(targetNode.x, targetNode.y, 400);
+      if (typeof currentZoom === 'number') {
+        graphRef.current?.zoom(currentZoom, 400);
+      }
+      return true;
+    };
+
+    if (centerSelectedNode()) {
+      return;
+    }
+    const timerId = window.setTimeout(centerSelectedNode, 120);
+    return () => window.clearTimeout(timerId);
+  }, [graphData.nodes, selectedNodeId]);
 
   return (
     <div
@@ -232,13 +301,18 @@ export const GraphCanvas = ({
           const y = runtimeNode.y ?? 0;
           const bubble = measureBubble(ctx, runtimeNode, locale, globalScale);
           const isSelected = runtimeNode.id === selectedNodeId;
-          const isDimmed =
+          const isDimmedBySelection =
             Boolean(selectedNodeId) &&
             highlightedNodeIds.size > 0 &&
             !highlightedNodeIds.has(runtimeNode.id);
+          const isDimmedBySearch =
+            isSearchActive &&
+            !isSelected &&
+            !searchMatchedNodeIds.has(runtimeNode.id);
 
           const baseColor = getNodeColor(runtimeNode);
-          const alpha = isDimmed ? 0.2 : 1;
+          const alpha =
+            (isDimmedBySelection ? 0.25 : 1) * (isDimmedBySearch ? 0.25 : 1);
           const bubbleX = x - bubble.width / 2;
           const bubbleY = y - bubble.height / 2;
 
@@ -306,17 +380,7 @@ export const GraphCanvas = ({
         }}
         linkColor={(edge) => {
           const runtimeEdge = edge as RuntimeEdge;
-          const source = resolveNode(runtimeEdge.source);
-          const target = resolveNode(runtimeEdge.target);
-          const sourceId = source?.id ?? String(runtimeEdge.source);
-          const targetId = target?.id ?? String(runtimeEdge.target);
-          const isDimmed =
-            Boolean(selectedNodeId) &&
-            highlightedNodeIds.size > 0 &&
-            (!highlightedNodeIds.has(sourceId) ||
-              !highlightedNodeIds.has(targetId));
-          const color = getEdgeColor(runtimeEdge, source, target);
-          return isDimmed ? `${color}55` : color;
+          return getRenderedEdgeColor(runtimeEdge);
         }}
         linkWidth={(edge) => {
           const runtimeEdge = edge as RuntimeEdge;
@@ -341,11 +405,7 @@ export const GraphCanvas = ({
         d3VelocityDecay={0.25}
         linkDirectionalArrowColor={(edge) => {
           const runtimeEdge = edge as RuntimeEdge;
-          return getEdgeColor(
-            runtimeEdge,
-            resolveNode(runtimeEdge.source),
-            resolveNode(runtimeEdge.target)
-          );
+          return getRenderedEdgeColor(runtimeEdge);
         }}
       />
     </div>
