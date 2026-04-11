@@ -89,7 +89,7 @@ export const SearchFilters = ({
                   active ? 'text-slate-900' : 'text-slate-500'
                 }`}
               >
-                {industry}
+                {t(`industry.${industry}`, { defaultValue: industry })}
               </button>
             );
           })}

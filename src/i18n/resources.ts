@@ -14,6 +14,20 @@ export const resources = {
         kindApplication: '応用',
         reset: '絞り込み解除'
       },
+      industry: {
+        civil_engineering: '土木工学',
+        information_theory: '情報理論',
+        storage: 'ストレージ',
+        communications: '通信',
+        finance: '金融',
+        medicine: '医療',
+        physics: '物理',
+        graphics: 'グラフィックス',
+        machine_learning: '機械学習',
+        cryptography: '暗号',
+        manufacturing: '製造',
+        logistics: '物流'
+      },
       panel: {
         close: '閉じる',
         adjacent: '隣接ノード',
@@ -82,6 +96,20 @@ export const resources = {
         kindConcept: 'Math Concept',
         kindApplication: 'Application',
         reset: 'Reset Filters'
+      },
+      industry: {
+        civil_engineering: 'Civil Engineering',
+        information_theory: 'Information Theory',
+        storage: 'Storage',
+        communications: 'Communications',
+        finance: 'Finance',
+        medicine: 'Medicine',
+        physics: 'Physics',
+        graphics: 'Graphics',
+        machine_learning: 'Machine Learning',
+        cryptography: 'Cryptography',
+        manufacturing: 'Manufacturing',
+        logistics: 'Logistics'
       },
       panel: {
         close: 'Close',
