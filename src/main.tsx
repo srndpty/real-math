@@ -1,11 +1,13 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import 'katex/dist/katex.min.css';
 import './styles/global.css';
 import './i18n/config';
 import { App } from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { initMonitoring } from './lib/monitoring';
+
+initMonitoring();
 
 const container = document.getElementById('root');
 

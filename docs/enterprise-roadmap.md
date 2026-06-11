@@ -60,7 +60,14 @@
 - `scripts/validate-content.mjs` / `.ts` の重複解消（tsx で `.ts` に一本化）
 - CI ワークフローに `concurrency`（同一 PR の旧 run キャンセル）と `timeout-minutes` を設定、actions を SHA ピン留め
 
-## Phase 1: 品質・安定性の本格強化（2〜4週間）
+## Phase 1: 品質・安定性の本格強化（2〜4週間） — ✅ 2026-06-12 実装済み
+
+実装メモ:
+
+- デプロイ先は Vercel を採用（`vercel.json` で CSP 等を定義）。ダッシュボードでのリポジトリ Import は手動作業
+- Sentry は `VITE_SENTRY_DSN` 設定時のみ有効化される opt-in 方式。Web Vitals は browserTracingIntegration が収集するため `web-vitals` パッケージは不要
+- リリース自動化は release-please を採用（Conventional Commits 前提が Phase 0 で整っているため）
+- GraphCanvas のビジュアルリグレッションは未実装: force レイアウトとフォントレンダリングが OS 依存で、Windows ローカルと Linux CI のスクリーンショット基準が一致しないため。導入する場合は Docker でベースライン生成する運用が前提（Phase 2 以降の検討事項）
 
 **P1-1. デプロイパイプライン**
 

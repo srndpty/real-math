@@ -51,7 +51,9 @@ describe('App UI flow', () => {
     renderApp('/ja');
 
     await user.click(screen.getByRole('button', { name: '微分' }));
-    expect(screen.getByRole('heading', { name: '微分' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: '微分' })
+    ).toBeInTheDocument();
     expect(
       screen.getAllByRole('button', { name: '積分' }).length
     ).toBeGreaterThan(0);
@@ -62,10 +64,10 @@ describe('App UI flow', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('supports deep link opening of node detail', () => {
+  it('supports deep link opening of node detail', async () => {
     renderApp('/ja?node=machine_learning_app');
     expect(
-      screen.getByRole('heading', { name: '機械学習' })
+      await screen.findByRole('heading', { name: '機械学習' })
     ).toBeInTheDocument();
   });
 

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportError } from '../lib/monitoring';
 
 type ErrorFallbackProps = {
   title: string;
@@ -55,6 +56,7 @@ export class ErrorBoundary extends Component<
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Unhandled rendering error:', error, errorInfo);
+    reportError(error, { componentStack: errorInfo.componentStack });
   }
 
   render() {

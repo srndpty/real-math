@@ -26,3 +26,52 @@ test('mobile viewport uses bottom sheet layout', async ({ page, isMobile }) => {
   await expect(shell).toBeVisible();
   await expect(shell).toHaveClass(/fixed/);
 });
+
+test('search narrows node list and selection updates share url', async ({
+  page
+}) => {
+  await page.goto('/ja');
+  await page.getByLabel('ノード検索').fill('微分');
+  await page.getByText('ノード一覧（代替操作）').click();
+
+  const nodeButtons = page.getByRole('button', { name: /^ノード詳細を開く:/ });
+  await expect(nodeButtons.first()).toBeVisible();
+  const count = await nodeButtons.count();
+  expect(count).toBeGreaterThan(0);
+
+  await page.getByRole('button', { name: /^ノード詳細を開く: 微分$/ }).click();
+  await expect(page.getByRole('heading', { name: '微分' })).toBeVisible();
+
+  const shareInput = page.getByRole('textbox').last();
+  await expect(shareInput).toHaveValue(/node=differentiation/);
+});
+
+test('kind filter hides applications from node list', async ({ page }) => {
+  await page.goto('/ja');
+  await page.getByRole('button', { name: '応用', exact: true }).click();
+  await page.getByText('ノード一覧（代替操作）').click();
+  await expect(
+    page.getByRole('button', { name: /^ノード詳細を開く: 微分$/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /^ノード詳細を開く: 機械学習$/ })
+  ).toHaveCount(0);
+
+  await page.getByRole('button', { name: '絞り込み解除' }).click();
+  await expect(
+    page.getByRole('button', { name: /^ノード詳細を開く: 機械学習$/ })
+  ).toBeVisible();
+});
+
+test('locale switch keeps selected node', async ({ page, isMobile }) => {
+  // モバイルでは詳細パネルのオーバーレイがヘッダーを覆うため対象外
+  test.skip(Boolean(isMobile), 'Desktop-only assertion');
+  await page.goto('/ja?node=differentiation');
+  await expect(page.getByRole('heading', { name: '微分' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'English' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Differentiation' })
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/en\?node=differentiation/);
+});

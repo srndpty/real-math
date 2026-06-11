@@ -16,12 +16,30 @@
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
     "validate:content": "tsx scripts/validate-content.ts",
+    "size": "size-limit",
     "check": "npm run lint && npm run typecheck && npm run validate:content && npm run test",
     "prepare": "husky"
   },
   "engines": {
     "node": ">=20.0.0"
   },
+  "size-limit": [
+    {
+      "name": "initial JS (index + vendor chunks, gzip)",
+      "path": [
+        "dist/assets/index-*.js",
+        "dist/assets/react-*.js",
+        "dist/assets/i18n-*.js",
+        "dist/assets/force-graph-*.js"
+      ],
+      "limit": "210 KB"
+    },
+    {
+      "name": "detail panel chunk (KaTeX, gzip)",
+      "path": "dist/assets/DetailPanel-*.js",
+      "limit": "95 KB"
+    }
+  ],
   "lint-staged": {
     "*.{ts,tsx}": [
       "eslint --fix",
@@ -35,6 +53,7 @@
     ]
   },
   "dependencies": {
+    "@sentry/react": "^10.57.0",
     "d3-force": "^3.0.0",
     "i18next": "^25.1.3",
     "katex": "^0.16.22",
@@ -51,6 +70,7 @@
     "@commitlint/config-conventional": "^21.0.2",
     "@eslint/js": "^9.36.0",
     "@playwright/test": "^1.55.0",
+    "@size-limit/file": "^12.1.0",
     "@tailwindcss/vite": "^4.1.13",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
@@ -77,6 +97,8 @@
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "size-limit": "^12.1.0",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.20.5",
     "typescript": "~5.9.2",

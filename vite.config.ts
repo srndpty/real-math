@@ -1,9 +1,28 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // ANALYZE=1 npm run build で dist/stats.html にバンドル構成を出力する
+    ...(process.env.ANALYZE
+      ? [visualizer({ filename: 'dist/stats.html', gzipSize: true })]
+      : [])
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          'force-graph': ['react-force-graph-2d', 'd3-force'],
+          i18n: ['i18next', 'react-i18next']
+        }
+      }
+    }
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],

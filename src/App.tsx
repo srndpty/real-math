@@ -1,53 +1,59 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 import {
   Navigate,
   Route,
   Routes,
   useNavigate,
-  useParams,
-  useSearchParams
+  useParams
 } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { DetailPanel } from './components/DetailPanel';
 import { GraphCanvas } from './components/GraphCanvas';
 import { Legend } from './components/Legend';
 import { NodeList } from './components/NodeList';
 import { SearchFilters } from './components/SearchFilters';
 import { ErrorFallback } from './components/ErrorBoundary';
 import { contentLoadError, graphContent } from './content/loadContent';
-import { INDUSTRY_CATEGORIES, type Locale } from './content/types';
-import {
-  createAdjacencyIndex,
-  filterGraph,
-  getNodeSearchText,
-  getHighlightedNodeIds,
-  isSupportedLocale
-} from './lib/graph';
-import { getNodeIdFromSearch, withNodeId } from './lib/urlState';
+import { useGraphFilters } from './hooks/useGraphFilters';
+import { useIsMobile } from './hooks/useIsMobile';
+import { useNodeSelection } from './hooks/useNodeSelection';
+import type { Locale } from './content/types';
+import { isSupportedLocale } from './lib/graph';
+import { createAdjacencyIndex, getHighlightedNodeIds } from './lib/graph';
+import { withNodeId } from './lib/urlState';
 
-const DEFAULT_KIND_FILTER = new Set<'pure_concept' | 'application'>([
-  'pure_concept',
-  'application'
-]);
-const DEFAULT_INDUSTRY_FILTER = new Set<string>(INDUSTRY_CATEGORIES);
+// KaTeX（数式描画）を含むため、ノード選択時まで読み込みを遅延する
+const DetailPanel = lazy(() =>
+  import('./components/DetailPanel').then((module) => ({
+    default: module.DetailPanel
+  }))
+);
 
 const AppPage = () => {
   const { locale: localeParam } = useParams<{ locale: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
+  const isMobile = useIsMobile();
 
-  const [query, setQuery] = useState('');
-  const [kindFilter, setKindFilter] = useState<
-    Set<'pure_concept' | 'application'>
-  >(() => new Set(DEFAULT_KIND_FILTER));
-  const [industryFilter, setIndustryFilter] = useState<Set<string>>(
-    () => new Set(DEFAULT_INDUSTRY_FILTER)
+  const {
+    query,
+    setQuery,
+    kindFilter,
+    industryFilter,
+    filtered,
+    isSearchActive,
+    searchMatchedNodeIds,
+    listedNodes,
+    toggleKind,
+    toggleIndustry,
+    resetFilters
+  } = useGraphFilters();
+
+  const nodesById = useMemo(
+    () => new Map(graphContent.nodes.map((node) => [node.id, node])),
+    []
   );
-  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 1024);
-
-  const panelTitleRef = useRef<HTMLHeadingElement | null>(null);
-  const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const { searchParams, selectedNode, selectNode, closePanel, panelTitleRef } =
+    useNodeSelection(nodesById);
 
   const locale: Locale = isSupportedLocale(localeParam) ? localeParam : 'ja';
 
@@ -61,52 +67,6 @@ const AppPage = () => {
     void i18n.changeLanguage(locale);
   }, [i18n, locale]);
 
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  const selectedNodeId = getNodeIdFromSearch(searchParams);
-
-  const nodesById = useMemo(
-    () => new Map(graphContent.nodes.map((node) => [node.id, node])),
-    []
-  );
-  const selectedNode = selectedNodeId
-    ? (nodesById.get(selectedNodeId) ?? null)
-    : null;
-
-  const filtered = useMemo(
-    () =>
-      filterGraph({
-        content: graphContent,
-        // Keep graph topology stable while typing in search.
-        query: '',
-        kindFilter,
-        industryFilter
-      }),
-    [industryFilter, kindFilter]
-  );
-  const isSearchActive = query.trim().length > 0;
-  const searchMatchedNodeIds = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) {
-      return new Set<string>();
-    }
-    return new Set(
-      filtered.nodes
-        .filter((node) => getNodeSearchText(node).includes(normalizedQuery))
-        .map((node) => node.id)
-    );
-  }, [filtered.nodes, query]);
-  const listedNodes = useMemo(() => {
-    if (!isSearchActive) {
-      return filtered.nodes;
-    }
-    return filtered.nodes.filter((node) => searchMatchedNodeIds.has(node.id));
-  }, [filtered.nodes, isSearchActive, searchMatchedNodeIds]);
-
   const adjacency = useMemo(
     () => createAdjacencyIndex(filtered.edges),
     [filtered.edges]
@@ -115,66 +75,6 @@ const AppPage = () => {
     () => getHighlightedNodeIds(selectedNode?.id ?? null, adjacency),
     [adjacency, selectedNode?.id]
   );
-
-  useEffect(() => {
-    if (selectedNode) {
-      lastFocusedRef.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      window.setTimeout(() => panelTitleRef.current?.focus(), 0);
-      return;
-    }
-    lastFocusedRef.current?.focus();
-  }, [selectedNode]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && selectedNode) {
-        setSearchParams(withNodeId(searchParams, null), { replace: true });
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [searchParams, selectedNode, setSearchParams]);
-
-  const selectNode = (nodeId: string) => {
-    setSearchParams(withNodeId(searchParams, nodeId), { replace: true });
-  };
-
-  const closePanel = () => {
-    setSearchParams(withNodeId(searchParams, null), { replace: true });
-  };
-
-  const toggleKind = (kind: 'pure_concept' | 'application') => {
-    setKindFilter((prev) => {
-      const next = new Set(prev);
-      if (next.has(kind)) {
-        next.delete(kind);
-      } else {
-        next.add(kind);
-      }
-      return next.size === 0 ? new Set(DEFAULT_KIND_FILTER) : next;
-    });
-  };
-
-  const toggleIndustry = (industry: string) => {
-    setIndustryFilter((prev) => {
-      const next = new Set(prev);
-      if (next.has(industry)) {
-        next.delete(industry);
-      } else {
-        next.add(industry);
-      }
-      return next.size === 0 ? new Set(DEFAULT_INDUSTRY_FILTER) : next;
-    });
-  };
-
-  const resetFilters = () => {
-    setQuery('');
-    setKindFilter(new Set(DEFAULT_KIND_FILTER));
-    setIndustryFilter(new Set(DEFAULT_INDUSTRY_FILTER));
-  };
 
   const switchLocale = (nextLocale: Locale) => {
     void navigate(`/${nextLocale}?${searchParams.toString()}`);
@@ -266,16 +166,18 @@ const AppPage = () => {
                 data-testid="detail-panel-shell"
                 className="fixed inset-x-0 bottom-0 z-30 h-[56vh] overflow-hidden rounded-t-2xl border border-slate-200 bg-white lg:absolute lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[44%] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:border-l"
               >
-                <DetailPanel
-                  locale={locale}
-                  node={selectedNode}
-                  allEdges={graphContent.edges}
-                  nodesById={nodesById}
-                  onClose={closePanel}
-                  onSelectNode={selectNode}
-                  shareUrl={shareUrl}
-                  panelTitleRef={panelTitleRef}
-                />
+                <Suspense fallback={null}>
+                  <DetailPanel
+                    locale={locale}
+                    node={selectedNode}
+                    allEdges={graphContent.edges}
+                    nodesById={nodesById}
+                    onClose={closePanel}
+                    onSelectNode={selectNode}
+                    shareUrl={shareUrl}
+                    panelTitleRef={panelTitleRef}
+                  />
+                </Suspense>
               </div>
             </>
           )}

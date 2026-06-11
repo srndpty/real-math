@@ -65,8 +65,8 @@ export type GraphNode = {
   detailedExplanation: LocaleText;
   mathNotationLatex?:
     | {
-        inline?: string[];
-        block?: string[];
+        inline?: string[] | undefined;
+        block?: string[] | undefined;
       }
     | undefined;
   keywords: LocaleText[];
@@ -78,8 +78,8 @@ export type GraphNode = {
     | undefined;
   references: {
     title: string;
-    url?: string;
-    note?: LocaleText;
+    url?: string | undefined;
+    note?: LocaleText | undefined;
   }[];
   tags: string[];
   difficultyLevel: 1 | 2 | 3 | 4 | 5;
