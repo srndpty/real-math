@@ -5,6 +5,7 @@ import 'katex/dist/katex.min.css';
 import './styles/global.css';
 import './i18n/config';
 import { App } from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const container = document.getElementById('root');
 
@@ -14,8 +15,10 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>
 );

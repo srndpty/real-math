@@ -13,7 +13,8 @@ import { GraphCanvas } from './components/GraphCanvas';
 import { Legend } from './components/Legend';
 import { NodeList } from './components/NodeList';
 import { SearchFilters } from './components/SearchFilters';
-import { graphContent } from './content/loadContent';
+import { ErrorFallback } from './components/ErrorBoundary';
+import { contentLoadError, graphContent } from './content/loadContent';
 import { INDUSTRY_CATEGORIES, type Locale } from './content/types';
 import {
   createAdjacencyIndex,
@@ -103,9 +104,7 @@ const AppPage = () => {
     if (!isSearchActive) {
       return filtered.nodes;
     }
-    return filtered.nodes.filter((node) =>
-      searchMatchedNodeIds.has(node.id)
-    );
+    return filtered.nodes.filter((node) => searchMatchedNodeIds.has(node.id));
   }, [filtered.nodes, isSearchActive, searchMatchedNodeIds]);
 
   const adjacency = useMemo(
@@ -286,10 +285,24 @@ const AppPage = () => {
   );
 };
 
-export const App = () => (
-  <Routes>
-    <Route path="/" element={<Navigate to="/ja" replace />} />
-    <Route path="/:locale" element={<AppPage />} />
-    <Route path="*" element={<Navigate to="/ja" replace />} />
-  </Routes>
-);
+export const App = () => {
+  if (contentLoadError) {
+    return (
+      <ErrorFallback
+        title="コンテンツを読み込めませんでした / Failed to load content"
+        description="graph-content.json がスキーマ検証に失敗しました。詳細は開発者コンソールを確認してください。 / graph-content.json failed schema validation. See the developer console for details."
+        detail={contentLoadError.issues
+          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+          .join('\n')}
+      />
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/ja" replace />} />
+      <Route path="/:locale" element={<AppPage />} />
+      <Route path="*" element={<Navigate to="/ja" replace />} />
+    </Routes>
+  );
+};

@@ -31,7 +31,11 @@ export const filterGraph = ({
   query: string;
   kindFilter: Set<'pure_concept' | 'application'>;
   industryFilter: Set<string>;
-}): { nodes: GraphNode[]; edges: GraphEdge[]; searchMatchedNodeIds: Set<string> } => {
+}): {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  searchMatchedNodeIds: Set<string>;
+} => {
   const normalizedQuery = query.trim().toLowerCase();
   const nodes = content.nodes.filter((node) => {
     if (

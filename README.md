@@ -52,6 +52,7 @@ npm run lint
 npm run typecheck
 npm run validate:content
 npm run test
+npm run test:coverage
 npm run test:e2e
 ```
 
@@ -60,6 +61,10 @@ npm run test:e2e
 ```bash
 npm run check
 ```
+
+## コントリビューション
+
+開発フロー・コミット規約（Conventional Commits）・Git フックについては `CONTRIBUTING.md` を参照してください。
 
 ## コンテンツ追加方法
 
