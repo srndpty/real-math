@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { forceCollide, forceManyBody } from 'd3-force';
 import ForceGraph2D from 'react-force-graph-2d';
+import type {
+  ForceGraphMethods,
+  LinkObject,
+  NodeObject
+} from 'react-force-graph-2d';
 import type { GraphEdge, GraphNode, Locale } from '../content/types';
 import { getNodeLabel } from '../lib/graph';
 import {
@@ -26,12 +31,20 @@ type GraphCanvasProps = {
 type RuntimeNode = GraphNode & {
   x?: number;
   y?: number;
+  visualRadius?: number;
   collisionRadius?: number;
 };
 
 type RuntimeEdge = GraphEdge & {
   source: RuntimeNode | string;
   target: RuntimeNode | string;
+};
+
+type ForceGraphNode = NodeObject<RuntimeNode>;
+type ForceGraphLink = LinkObject<RuntimeNode, RuntimeEdge>;
+type GraphRef = ForceGraphMethods<ForceGraphNode, ForceGraphLink>;
+type LinkDistanceForce = {
+  distance: (distance: (link: ForceGraphLink) => number) => unknown;
 };
 
 type BubbleMetrics = {
@@ -47,14 +60,6 @@ const BUBBLE_HEIGHT = 24;
 const BUBBLE_PADDING_X = 10;
 const COLLISION_PADDING = 16;
 const EXTRA_LINK_GAP = 42;
-
-type ForceGraphHandle = {
-  d3Force: (name: string, force?: unknown) => unknown;
-  d3ReheatSimulation: () => void;
-  centerAt: (x?: number, y?: number, transitionMs?: number) => void;
-  zoom: (k?: number, transitionMs?: number) => number | void;
-  zoomToFit: (transitionMs?: number, padding?: number) => void;
-};
 
 const resolveNode = (
   candidate: RuntimeNode | string
@@ -150,6 +155,9 @@ const getArrowLengthByRelation = (relation: GraphEdge['relation']): number => {
   }
 };
 
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
+
 export const GraphCanvas = ({
   locale,
   nodes,
@@ -162,7 +170,7 @@ export const GraphCanvas = ({
   onBackgroundClick
 }: GraphCanvasProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const graphRef = useRef<ForceGraphHandle | null>(null);
+  const graphRef = useRef<GraphRef | undefined>(undefined);
   const hasInitialFitRef = useRef(false);
   const [size, setSize] = useState({ width: 300, height: 300 });
 
@@ -189,10 +197,12 @@ export const GraphCanvas = ({
     () => ({
       nodes: nodes.map((node) => {
         const estimatedWidth = estimateStableNodeWidth(node);
+        const visualRadius = Math.max(estimatedWidth / 2, BUBBLE_HEIGHT / 2);
         return {
           ...node,
+          visualRadius,
           collisionRadius:
-            Math.max(estimatedWidth / 2, BUBBLE_HEIGHT / 2) + COLLISION_PADDING
+            visualRadius + COLLISION_PADDING
         };
       }),
       links: edges
@@ -223,10 +233,49 @@ export const GraphCanvas = ({
     return baseColor;
   };
 
+  const getArrowRelPos = (runtimeEdge: RuntimeEdge): number => {
+    const source = resolveNode(runtimeEdge.source);
+    const target = resolveNode(runtimeEdge.target);
+    if (
+      !source ||
+      !target ||
+      typeof source.x !== 'number' ||
+      typeof source.y !== 'number' ||
+      typeof target.x !== 'number' ||
+      typeof target.y !== 'number'
+    ) {
+      return 0.93;
+    }
+
+    const dx = target.x - source.x;
+    const dy = target.y - source.y;
+    const centerDistance = Math.hypot(dx, dy);
+    if (centerDistance < 1) {
+      return 0.9;
+    }
+
+    const targetVisualRadius = target.visualRadius ?? 20;
+    const relPos = 1 - targetVisualRadius / centerDistance;
+    return clamp(relPos, 0.7, 0.99);
+  };
+
+  const getLinkDistance = (edge: ForceGraphLink): number => {
+    const runtimeEdge = edge as RuntimeEdge;
+    const source = resolveNode(runtimeEdge.source);
+    const target = resolveNode(runtimeEdge.target);
+    const sourceRadius = source?.collisionRadius ?? 28;
+    const targetRadius = target?.collisionRadius ?? 28;
+    return sourceRadius + targetRadius + EXTRA_LINK_GAP;
+  };
+
   useEffect(() => {
     if (!graphRef.current) {
       return;
     }
+    const linkForce = graphRef.current.d3Force('link') as
+      | LinkDistanceForce
+      | undefined;
+    linkForce?.distance(getLinkDistance);
     graphRef.current.d3Force(
       'collide',
       forceCollide<RuntimeNode>((node) => node.collisionRadius ?? 28).iterations(
@@ -392,15 +441,9 @@ export const GraphCanvas = ({
         linkDirectionalArrowLength={(edge) =>
           getArrowLengthByRelation((edge as RuntimeEdge).relation)
         }
-        linkDirectionalArrowRelPos={0.88}
-        linkDistance={(edge) => {
-          const runtimeEdge = edge as RuntimeEdge;
-          const source = resolveNode(runtimeEdge.source);
-          const target = resolveNode(runtimeEdge.target);
-          const sourceRadius = source?.collisionRadius ?? 28;
-          const targetRadius = target?.collisionRadius ?? 28;
-          return sourceRadius + targetRadius + EXTRA_LINK_GAP;
-        }}
+        linkDirectionalArrowRelPos={(edge) =>
+          getArrowRelPos(edge as RuntimeEdge)
+        }
         d3AlphaDecay={0.03}
         d3VelocityDecay={0.25}
         linkDirectionalArrowColor={(edge) => {
