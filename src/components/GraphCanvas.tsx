@@ -31,6 +31,8 @@ type GraphCanvasProps = {
 type RuntimeNode = GraphNode & {
   x?: number;
   y?: number;
+  visualWidth?: number;
+  visualHeight?: number;
   visualRadius?: number;
   collisionRadius?: number;
 };
@@ -139,7 +141,13 @@ const estimateBubbleWidth = (label: string): number => {
 };
 
 const estimateStableNodeWidth = (node: GraphNode): number =>
-  Math.max(estimateBubbleWidth(node.labels.ja), estimateBubbleWidth(node.labels.en));
+  Math.max(
+    estimateBubbleWidth(node.labels.ja),
+    estimateBubbleWidth(node.labels.en)
+  );
+
+const estimateNodeWidth = (node: GraphNode, locale: Locale): number =>
+  estimateBubbleWidth(node.labels[locale]);
 
 const getArrowLengthByRelation = (relation: GraphEdge['relation']): number => {
   switch (relation) {
@@ -157,6 +165,59 @@ const getArrowLengthByRelation = (relation: GraphEdge['relation']): number => {
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
+
+const getNodeCornerRadius = (node: RuntimeNode): number =>
+  node.kind === 'application' ? 7 : 15;
+
+const getRoundedRectBoundaryDistance = (
+  dx: number,
+  dy: number,
+  halfWidth: number,
+  halfHeight: number,
+  radius: number
+): number => {
+  const lineLength = Math.hypot(dx, dy);
+  if (lineLength < 1) {
+    return 0;
+  }
+
+  const unitX = dx / lineLength;
+  const unitY = dy / lineLength;
+  const absUnitX = Math.abs(unitX);
+  const absUnitY = Math.abs(unitY);
+  const safeRadius = Math.min(radius, halfWidth, halfHeight);
+  const sideHalfWidth = halfWidth - safeRadius;
+  const sideHalfHeight = halfHeight - safeRadius;
+
+  const xSideDistance =
+    absUnitX > 0 ? halfWidth / absUnitX : Number.POSITIVE_INFINITY;
+  const xSideY = Math.abs(unitY * xSideDistance);
+  if (xSideY <= sideHalfHeight) {
+    return xSideDistance;
+  }
+
+  const ySideDistance =
+    absUnitY > 0 ? halfHeight / absUnitY : Number.POSITIVE_INFINITY;
+  const ySideX = Math.abs(unitX * ySideDistance);
+  if (ySideX <= sideHalfWidth) {
+    return ySideDistance;
+  }
+
+  const cornerCenterX = Math.sign(unitX || 1) * sideHalfWidth;
+  const cornerCenterY = Math.sign(unitY || 1) * sideHalfHeight;
+  const projection = unitX * cornerCenterX + unitY * cornerCenterY;
+  const cornerCenterDistanceSq =
+    cornerCenterX * cornerCenterX + cornerCenterY * cornerCenterY;
+  const discriminant =
+    projection * projection -
+    (cornerCenterDistanceSq - safeRadius * safeRadius);
+
+  if (discriminant < 0) {
+    return Math.min(xSideDistance, ySideDistance);
+  }
+
+  return projection + Math.sqrt(discriminant);
+};
 
 export const GraphCanvas = ({
   locale,
@@ -196,18 +257,22 @@ export const GraphCanvas = ({
   const graphData = useMemo(
     () => ({
       nodes: nodes.map((node) => {
-        const estimatedWidth = estimateStableNodeWidth(node);
+        const estimatedWidth = estimateNodeWidth(node, locale);
+        const stableWidth = estimateStableNodeWidth(node);
         const visualRadius = Math.max(estimatedWidth / 2, BUBBLE_HEIGHT / 2);
+        const collisionRadius =
+          Math.max(stableWidth / 2, BUBBLE_HEIGHT / 2) + COLLISION_PADDING;
         return {
           ...node,
+          visualWidth: estimatedWidth,
+          visualHeight: BUBBLE_HEIGHT,
           visualRadius,
-          collisionRadius:
-            visualRadius + COLLISION_PADDING
+          collisionRadius
         };
       }),
       links: edges
     }),
-    [edges, nodes]
+    [edges, locale, nodes]
   );
 
   const getRenderedEdgeColor = (runtimeEdge: RuntimeEdge): string => {
@@ -254,9 +319,22 @@ export const GraphCanvas = ({
       return 0.9;
     }
 
-    const targetVisualRadius = target.visualRadius ?? 20;
-    const relPos = 1 - targetVisualRadius / centerDistance;
-    return clamp(relPos, 0.7, 0.99);
+    const targetBoundaryDistance = getRoundedRectBoundaryDistance(
+      source.x - target.x,
+      source.y - target.y,
+      (target.visualWidth ?? 56) / 2,
+      (target.visualHeight ?? BUBBLE_HEIGHT) / 2,
+      getNodeCornerRadius(target)
+    );
+    const arrowLength = getArrowLengthByRelation(runtimeEdge.relation);
+    const availableLineLength = centerDistance - arrowLength;
+    if (availableLineLength <= 0) {
+      return 1;
+    }
+
+    const arrowHeadDistance = centerDistance - targetBoundaryDistance;
+    const relPos = (arrowHeadDistance - arrowLength) / availableLineLength;
+    return clamp(relPos, 0, 1);
   };
 
   const getLinkDistance = (edge: ForceGraphLink): number => {
@@ -278,9 +356,9 @@ export const GraphCanvas = ({
     linkForce?.distance(getLinkDistance);
     graphRef.current.d3Force(
       'collide',
-      forceCollide<RuntimeNode>((node) => node.collisionRadius ?? 28).iterations(
-        5
-      )
+      forceCollide<RuntimeNode>(
+        (node) => node.collisionRadius ?? 28
+      ).iterations(5)
     );
     graphRef.current.d3Force(
       'charge',
@@ -340,6 +418,7 @@ export const GraphCanvas = ({
         width={size.width}
         height={size.height}
         nodeId="id"
+        nodeRelSize={0}
         linkDirectionalParticles={0}
         cooldownTicks={120}
         onNodeClick={(node) => onSelectNode((node as RuntimeNode).id)}
