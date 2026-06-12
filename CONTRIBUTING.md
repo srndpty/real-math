@@ -52,9 +52,11 @@ chore: 依存関係を更新
 ## コンテンツ変更
 
 `src/content/graph-content.json` の変更は通常のコード変更と同じ PR フローで行います。
+詳細な運用ルール（status の扱い・スキーマ変更ポリシー・自動チェックの内容）は
+`docs/content-operations.md` を参照してください。
 
 1. ノード/エッジを追加・編集（スキーマ: `src/content/schema.ts`）
-2. `npm run validate:content` で検証
+2. `npm run validate:content` と `npm run lint:content` で検証
 3. 新規ノードは `status: "draft"` で追加し、レビュー承認後に `reviewed` へ変更
 
 ## ブランチ保護（リポジトリ管理者向け設定）

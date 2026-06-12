@@ -17,8 +17,9 @@
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
     "validate:content": "tsx scripts/validate-content.ts",
+    "lint:content": "tsx scripts/lint-content.ts",
     "size": "size-limit",
-    "check": "npm run lint && npm run typecheck && npm run validate:content && npm run test",
+    "check": "npm run lint && npm run typecheck && npm run validate:content && npm run lint:content && npm run test",
     "prepare": "husky"
   },
   "engines": {
@@ -50,7 +51,8 @@
       "prettier --write"
     ],
     "src/content/graph-content.json": [
-      "tsx scripts/validate-content.ts"
+      "tsx scripts/validate-content.ts",
+      "tsx scripts/lint-content.ts"
     ]
   },
   "dependencies": {

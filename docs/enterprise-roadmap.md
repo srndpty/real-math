@@ -111,27 +111,32 @@
 
 - `?q=` / `?kind=` / `?ind=` を `useGraphFilters` が読み書きする。デフォルト状態ではパラメータを載せず URL を汚さない。不正値はデフォルトにフォールバック
 
-**P2-2. SEO/OGP（既存ロードマップ P0 と整合）** — ⚠️ 部分実装（2026-06-12）
+**P2-2. SEO/OGP（既存ロードマップ P0 と整合）** — ✅ 2026-06-13 実装済み
 
-- ✅ react-helmet-async によるメタタグ・OGP・canonical・JSON-LD の動的生成
-- ✅ robots.txt / sitemap.xml（`public/`。**ドメイン確定後にプレースホルダ `real-math.example.com` の置換が必要**）
-- ❌ 未実装: ノード詳細の静的ページ生成（vite-ssg / プリレンダ）。**SPA のクライアントサイド meta 更新は、JS を実行しない OGP クローラー（Slack/X/LINE 等）には見えない**ため、ノード単位の OGP を効かせるにはプリレンダが必須。残タスクとして保留
+- react-helmet-async によるメタタグ・OGP・canonical・JSON-LD の動的生成（SPA 内遷移用）
+- ビルド時プリレンダ（`scripts/prerender.ts`、postbuild で自動実行）: 全ノード × 全ロケールの静的 HTML を `/:locale/node/:id` に生成。JS を実行しない OGP クローラーにもノード単位のメタタグが見える
+- 共有 URL はパス形式（`/ja/node/differentiation`）が正。SPA 上ではクエリ形式へクライアントリダイレクト
+- sitemap.xml / robots.txt はビルド時にコンテンツから生成（ノード追加で自動追従）
+- サイト URL は `SITE_URL` 環境変数で上書き可能（既定: `https://real-math.vercel.app`。**カスタムドメイン導入時は Vercel の環境変数を更新すること**）
 
-**P2-3. グラフ機能拡張（既存ロードマップ P1）**
+**P2-3. グラフ機能拡張（既存ロードマップ P1）** — ✅ 2026-06-13 実装済み
 
-- エッジ種別フィルタ UI、近傍深さ (1-hop/2-hop) 切替
-- ノード数百規模を見据えた described レイアウト最適化（クラスタリング・LOD 描画）
+- エッジ種別フィルタ UI（URL パラメータ `rel=` に同期）、近傍深さ (1-hop/2-hop) 切替
+- LOD 描画: 強いズームアウト時はテキスト計測・描画を省略（数百ノード規模への備え）
+- クラスタリングは未実装（ノード数が 100 を超えたら再検討）
 
-**P2-4. コンテンツ運用ワークフロー**
+**P2-4. コンテンツ運用ワークフロー** — ✅ 2026-06-13 実装済み
 
-- コンテンツ変更専用の PR フロー: `status: draft → reviewed` の承認プロセスを CODEOWNERS + CI 検証で担保
-- スキーマ変更時のマイグレーションスクリプトと差分レポート
-- コンテンツ品質 lint（リンク切れ検査、未翻訳検出、LaTeX 構文検証）
+- CODEOWNERS で `src/content/` の変更にオーナーレビューを必須化
+- コンテンツ品質 lint（`lint:content`）: KaTeX 実レンダリングによる LaTeX 構文検証、ラベル重複（エラー）、未翻訳・キーワード欠落（警告）。pre-commit + CI で実行
+- 運用ルールは `docs/content-operations.md` に集約（status の扱い、スキーマ変更・マイグレーションポリシー）
+- リンク切れ検査は CI に入れず四半期の手動確認（外部要因で CI が不安定になるため）
 
-**P2-5. アクセシビリティ深化**
+**P2-5. アクセシビリティ深化** — ✅ 2026-06-13 実装済み
 
-- 詳細パネルのフォーカストラップ、`prefers-reduced-motion` 対応（グラフアニメーション抑制）
-- スクリーンリーダー実機確認の手順書、WCAG 2.1 AA セルフチェックリスト
+- モバイルボトムシートのフォーカストラップ（`useFocusTrap`）
+- `prefers-reduced-motion`: CSS トランジション停止 + グラフレイアウトの事前計算（整列アニメーション非表示）
+- `docs/accessibility.md`: WCAG 2.1 AA セルフチェックリスト + NVDA/VoiceOver 実機確認手順
 
 ## Phase 3: 長期（2ヶ月〜）
 

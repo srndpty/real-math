@@ -1,0 +1,6 @@
+# デフォルトオーナー
+* @srndpty
+
+# コンテンツ変更（status: draft → reviewed の承認はここで担保する）
+/src/content/ @srndpty
+/docs/ @srndpty
