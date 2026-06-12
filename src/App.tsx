@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import {
   Navigate,
@@ -14,13 +14,14 @@ import { NodeList } from './components/NodeList';
 import { SearchFilters } from './components/SearchFilters';
 import { ErrorFallback } from './components/ErrorBoundary';
 import { contentLoadError, graphContent } from './content/loadContent';
+import { useFocusTrap } from './hooks/useFocusTrap';
 import { useGraphFilters } from './hooks/useGraphFilters';
 import { useIsMobile } from './hooks/useIsMobile';
+import { usePrefersReducedMotion } from './hooks/useMediaQuery';
 import { useNodeSelection } from './hooks/useNodeSelection';
 import type { Locale } from './content/types';
 import { isSupportedLocale } from './lib/graph';
 import { createAdjacencyIndex, getHighlightedNodeIds } from './lib/graph';
-import { withNodeId } from './lib/urlState';
 
 // KaTeX（数式描画）を含むため、ノード選択時まで読み込みを遅延する
 const DetailPanel = lazy(() =>
@@ -34,20 +35,25 @@ const AppPage = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isMobile = useIsMobile();
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const panelShellRef = useRef<HTMLDivElement | null>(null);
 
   const {
     query,
     setQuery,
     kindFilter,
     industryFilter,
+    relationFilter,
     filtered,
     isSearchActive,
     searchMatchedNodeIds,
     listedNodes,
     toggleKind,
     toggleIndustry,
+    toggleRelation,
     resetFilters
   } = useGraphFilters();
+  const [neighborDepth, setNeighborDepth] = useState<1 | 2>(1);
 
   const nodesById = useMemo(
     () => new Map(graphContent.nodes.map((node) => [node.id, node])),
@@ -55,6 +61,10 @@ const AppPage = () => {
   );
   const { searchParams, selectedNode, selectNode, closePanel, panelTitleRef } =
     useNodeSelection(nodesById);
+
+  // モバイルのボトムシートはオーバーレイ付きのモーダル表示になるため、
+  // 表示中は Tab フォーカスをパネル内へ閉じ込める
+  useFocusTrap(panelShellRef, Boolean(selectedNode) && isMobile);
 
   const locale: Locale = isSupportedLocale(localeParam) ? localeParam : 'ja';
 
@@ -73,15 +83,21 @@ const AppPage = () => {
     [filtered.edges]
   );
   const highlightedNodeIds = useMemo(
-    () => getHighlightedNodeIds(selectedNode?.id ?? null, adjacency),
-    [adjacency, selectedNode?.id]
+    () =>
+      getHighlightedNodeIds(selectedNode?.id ?? null, adjacency, neighborDepth),
+    [adjacency, neighborDepth, selectedNode?.id]
   );
 
   const switchLocale = (nextLocale: Locale) => {
     void navigate(`/${nextLocale}?${searchParams.toString()}`);
   };
 
-  const shareUrl = `${window.location.origin}/${locale}?${withNodeId(searchParams, selectedNode?.id ?? null).toString()}`;
+  // 共有 URL はプリレンダ済みのパス形式（/:locale/node/:id）を正とする。
+  // OGP クローラーは JS を実行しないため、静的 HTML が存在するこの形式でないと
+  // ノード単位のメタタグが解決されない。
+  const shareUrl = selectedNode
+    ? `${window.location.origin}/${locale}/node/${selectedNode.id}`
+    : `${window.location.origin}/${locale}`;
 
   const pageTitle = selectedNode
     ? `${selectedNode.labels[locale]} | Real Math Map`
@@ -155,6 +171,8 @@ const AppPage = () => {
             onToggleKind={toggleKind}
             industryFilter={industryFilter}
             onToggleIndustry={toggleIndustry}
+            relationFilter={relationFilter}
+            onToggleRelation={toggleRelation}
             onReset={resetFilters}
           />
           <Legend />
@@ -180,10 +198,34 @@ const AppPage = () => {
               highlightedNodeIds={highlightedNodeIds}
               searchMatchedNodeIds={searchMatchedNodeIds}
               isSearchActive={isSearchActive}
+              reducedMotion={prefersReducedMotion}
               onSelectNode={selectNode}
               onBackgroundClick={closePanel}
             />
           </div>
+
+          {selectedNode && (
+            <div className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-lg border border-slate-200 bg-white/95 px-2 py-1 text-xs shadow-sm">
+              <span className="font-semibold text-slate-600">
+                {t('controls.neighborDepth')}
+              </span>
+              {([1, 2] as const).map((depth) => (
+                <button
+                  key={depth}
+                  type="button"
+                  aria-pressed={neighborDepth === depth}
+                  onClick={() => setNeighborDepth(depth)}
+                  className={`rounded-md border px-2 py-0.5 ${
+                    neighborDepth === depth
+                      ? 'border-sky-700 bg-sky-50 text-sky-800'
+                      : 'border-slate-300 bg-white text-slate-600'
+                  }`}
+                >
+                  {t(`controls.depth${depth}`)}
+                </button>
+              ))}
+            </div>
+          )}
 
           {selectedNode && (
             <>
@@ -196,6 +238,7 @@ const AppPage = () => {
                 />
               )}
               <div
+                ref={panelShellRef}
                 data-testid="detail-panel-shell"
                 className="fixed inset-x-0 bottom-0 z-30 h-[56vh] overflow-hidden rounded-t-2xl border border-slate-200 bg-white lg:absolute lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[44%] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:border-l"
               >
@@ -220,6 +263,18 @@ const AppPage = () => {
   );
 };
 
+// プリレンダ済みのパス形式 URL（/:locale/node/:id）を SPA 上では
+// 既存のクエリ形式（/:locale?node=:id）へ正規化する
+const NodeRouteRedirect = () => {
+  const { locale: localeParam, nodeId } = useParams<{
+    locale: string;
+    nodeId: string;
+  }>();
+  const locale = isSupportedLocale(localeParam) ? localeParam : 'ja';
+  const search = nodeId ? `?node=${encodeURIComponent(nodeId)}` : '';
+  return <Navigate to={`/${locale}${search}`} replace />;
+};
+
 export const App = () => {
   if (contentLoadError) {
     return (
@@ -237,6 +292,7 @@ export const App = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/ja" replace />} />
       <Route path="/:locale" element={<AppPage />} />
+      <Route path="/:locale/node/:nodeId" element={<NodeRouteRedirect />} />
       <Route path="*" element={<Navigate to="/ja" replace />} />
     </Routes>
   );

@@ -2,6 +2,7 @@ export const NODE_QUERY_KEY = 'node';
 export const SEARCH_QUERY_KEY = 'q';
 export const KIND_FILTER_KEY = 'kind';
 export const INDUSTRY_FILTER_KEY = 'ind';
+export const RELATION_FILTER_KEY = 'rel';
 
 export const getNodeIdFromSearch = (
   searchParams: URLSearchParams
@@ -25,6 +26,13 @@ export const getIndustryFilterFromSearch = (
   return param ? param.split(',') : [];
 };
 
+export const getRelationFilterFromSearch = (
+  searchParams: URLSearchParams
+): string[] => {
+  const param = searchParams.get(RELATION_FILTER_KEY);
+  return param ? param.split(',') : [];
+};
+
 export const withNodeId = (
   searchParams: URLSearchParams,
   nodeId: string | null
@@ -45,11 +53,13 @@ export const withFilters = (
   {
     query,
     kindFilter,
-    industryFilter
+    industryFilter,
+    relationFilter = null
   }: {
     query: string;
     kindFilter: Set<string> | null;
     industryFilter: Set<string> | null;
+    relationFilter?: Set<string> | null;
   }
 ): URLSearchParams => {
   const next = new URLSearchParams(searchParams.toString());
@@ -60,17 +70,16 @@ export const withFilters = (
     next.delete(SEARCH_QUERY_KEY);
   }
 
-  if (kindFilter && kindFilter.size > 0) {
-    next.set(KIND_FILTER_KEY, Array.from(kindFilter).sort().join(','));
-  } else {
-    next.delete(KIND_FILTER_KEY);
-  }
-
-  if (industryFilter && industryFilter.size > 0) {
-    next.set(INDUSTRY_FILTER_KEY, Array.from(industryFilter).sort().join(','));
-  } else {
-    next.delete(INDUSTRY_FILTER_KEY);
-  }
+  const setOrDelete = (key: string, values: Set<string> | null) => {
+    if (values && values.size > 0) {
+      next.set(key, Array.from(values).sort().join(','));
+    } else {
+      next.delete(key);
+    }
+  };
+  setOrDelete(KIND_FILTER_KEY, kindFilter);
+  setOrDelete(INDUSTRY_FILTER_KEY, industryFilter);
+  setOrDelete(RELATION_FILTER_KEY, relationFilter);
 
   return next;
 };

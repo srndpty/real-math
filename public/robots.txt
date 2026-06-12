@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin
-Disallow: /*.json$
-
-Sitemap: https://real-math.example.com/sitemap.xml

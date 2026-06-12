@@ -43,7 +43,13 @@ test('search narrows node list and selection updates share url', async ({
   await expect(page.getByRole('heading', { name: '微分' })).toBeVisible();
 
   const shareInput = page.getByRole('textbox').last();
-  await expect(shareInput).toHaveValue(/node=differentiation/);
+  await expect(shareInput).toHaveValue(/\/ja\/node\/differentiation/);
+});
+
+test('prerendered path url redirects to SPA query form', async ({ page }) => {
+  await page.goto('/ja/node/differentiation');
+  await expect(page.getByRole('heading', { name: '微分' })).toBeVisible();
+  await expect(page).toHaveURL(/\/ja\?node=differentiation/);
 });
 
 test('kind filter hides applications from node list', async ({ page }) => {
@@ -89,6 +95,28 @@ test('changing filters updates the URL for sharing', async ({ page }) => {
   // 絞り込み解除でパラメータが消え、URL がクリーンに戻る
   await page.getByRole('button', { name: '絞り込み解除' }).click();
   await expect(page).not.toHaveURL(/q=|kind=/);
+});
+
+test('edge relation filter updates URL', async ({ page }) => {
+  await page.goto('/ja');
+  await page.getByRole('button', { name: '前提', exact: true }).click();
+  await expect(page).toHaveURL(/rel=/);
+
+  await page.getByRole('button', { name: '絞り込み解除' }).click();
+  await expect(page).not.toHaveURL(/rel=/);
+});
+
+test('neighbor depth toggle switches between 1 and 2 hops', async ({
+  page,
+  isMobile
+}) => {
+  test.skip(Boolean(isMobile), 'Desktop-only assertion');
+  await page.goto('/ja?node=differentiation');
+
+  const twoHop = page.getByRole('button', { name: '2ホップ' });
+  await expect(twoHop).toHaveAttribute('aria-pressed', 'false');
+  await twoHop.click();
+  await expect(twoHop).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('locale switch keeps selected node', async ({ page, isMobile }) => {

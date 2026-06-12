@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { graphContent } from '../content/loadContent';
-import { INDUSTRY_CATEGORIES } from '../content/types';
+import {
+  EDGE_RELATIONS,
+  INDUSTRY_CATEGORIES,
+  type EdgeRelation
+} from '../content/types';
 import { filterGraph, getNodeSearchText } from '../lib/graph';
 import {
   getIndustryFilterFromSearch,
   getKindFilterFromSearch,
+  getRelationFilterFromSearch,
   getSearchQueryFromSearch,
   withFilters
 } from '../lib/urlState';
@@ -17,6 +22,18 @@ const DEFAULT_KIND_FILTER = new Set<KindFilterValue>([
   'application'
 ]);
 const DEFAULT_INDUSTRY_FILTER = new Set<string>(INDUSTRY_CATEGORIES);
+const DEFAULT_RELATION_FILTER = new Set<EdgeRelation>(EDGE_RELATIONS);
+
+const isEdgeRelation = (value: string): value is EdgeRelation =>
+  (EDGE_RELATIONS as readonly string[]).includes(value);
+
+const parseRelationFilter = (
+  searchParams: URLSearchParams
+): Set<EdgeRelation> => {
+  const values =
+    getRelationFilterFromSearch(searchParams).filter(isEdgeRelation);
+  return values.length > 0 ? new Set(values) : new Set(DEFAULT_RELATION_FILTER);
+};
 
 const isKindFilterValue = (value: string): value is KindFilterValue =>
   value === 'pure_concept' || value === 'application';
@@ -59,6 +76,9 @@ export const useGraphFilters = () => {
   const [industryFilter, setIndustryFilter] = useState<Set<string>>(() =>
     parseIndustryFilter(searchParams)
   );
+  const [relationFilter, setRelationFilter] = useState<Set<EdgeRelation>>(() =>
+    parseRelationFilter(searchParams)
+  );
 
   // フィルタ変更を URL へ反映する。デフォルト状態のときはパラメータを
   // 載せず、URL を汚さない。同一文字列なら書き込まない（無限ループ防止）。
@@ -66,15 +86,25 @@ export const useGraphFilters = () => {
     const isDefaultKind = kindFilter.size === DEFAULT_KIND_FILTER.size;
     const isDefaultIndustry =
       industryFilter.size === DEFAULT_INDUSTRY_FILTER.size;
+    const isDefaultRelation =
+      relationFilter.size === DEFAULT_RELATION_FILTER.size;
     const next = withFilters(searchParams, {
       query: query.trim(),
       kindFilter: isDefaultKind ? null : kindFilter,
-      industryFilter: isDefaultIndustry ? null : industryFilter
+      industryFilter: isDefaultIndustry ? null : industryFilter,
+      relationFilter: isDefaultRelation ? null : relationFilter
     });
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [query, kindFilter, industryFilter, searchParams, setSearchParams]);
+  }, [
+    query,
+    kindFilter,
+    industryFilter,
+    relationFilter,
+    searchParams,
+    setSearchParams
+  ]);
 
   const filtered = useMemo(
     () =>
@@ -83,9 +113,10 @@ export const useGraphFilters = () => {
         // Keep graph topology stable while typing in search.
         query: '',
         kindFilter,
-        industryFilter
+        industryFilter,
+        relationFilter
       }),
-    [industryFilter, kindFilter]
+    [industryFilter, kindFilter, relationFilter]
   );
 
   const isSearchActive = query.trim().length > 0;
@@ -119,10 +150,17 @@ export const useGraphFilters = () => {
     );
   };
 
+  const toggleRelation = (relation: EdgeRelation) => {
+    setRelationFilter((prev) =>
+      toggleInSet(prev, relation, DEFAULT_RELATION_FILTER)
+    );
+  };
+
   const resetFilters = () => {
     setQuery('');
     setKindFilter(new Set(DEFAULT_KIND_FILTER));
     setIndustryFilter(new Set(DEFAULT_INDUSTRY_FILTER));
+    setRelationFilter(new Set(DEFAULT_RELATION_FILTER));
   };
 
   return {
@@ -130,12 +168,14 @@ export const useGraphFilters = () => {
     setQuery,
     kindFilter,
     industryFilter,
+    relationFilter,
     filtered,
     isSearchActive,
     searchMatchedNodeIds,
     listedNodes,
     toggleKind,
     toggleIndustry,
+    toggleRelation,
     resetFilters
   };
 };

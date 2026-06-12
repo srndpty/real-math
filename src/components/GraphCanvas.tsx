@@ -24,6 +24,7 @@ type GraphCanvasProps = {
   highlightedNodeIds: Set<string>;
   searchMatchedNodeIds: Set<string>;
   isSearchActive: boolean;
+  reducedMotion?: boolean;
   onSelectNode: (nodeId: string) => void;
   onBackgroundClick: () => void;
 };
@@ -291,6 +292,7 @@ export const GraphCanvas = ({
   highlightedNodeIds,
   searchMatchedNodeIds,
   isSearchActive,
+  reducedMotion = false,
   onSelectNode,
   onBackgroundClick
 }: GraphCanvasProps) => {
@@ -391,10 +393,10 @@ export const GraphCanvas = ({
     }
     hasInitialFitRef.current = true;
     const timerId = window.setTimeout(() => {
-      graphRef.current?.zoomToFit(500, 64);
+      graphRef.current?.zoomToFit(reducedMotion ? 0 : 500, 64);
     }, 280);
     return () => window.clearTimeout(timerId);
-  }, [graphData]);
+  }, [graphData, reducedMotion]);
 
   useEffect(() => {
     if (!selectedNodeId || !graphRef.current) {
@@ -412,10 +414,11 @@ export const GraphCanvas = ({
       ) {
         return false;
       }
+      const duration = reducedMotion ? 0 : 400;
       const currentZoom = graphRef.current?.zoom();
-      graphRef.current?.centerAt(targetNode.x, targetNode.y, 400);
+      graphRef.current?.centerAt(targetNode.x, targetNode.y, duration);
       if (typeof currentZoom === 'number') {
-        graphRef.current?.zoom(currentZoom, 400);
+        graphRef.current?.zoom(currentZoom, duration);
       }
       return true;
     };
@@ -425,7 +428,7 @@ export const GraphCanvas = ({
     }
     const timerId = window.setTimeout(centerSelectedNode, 120);
     return () => window.clearTimeout(timerId);
-  }, [graphData.nodes, selectedNodeId]);
+  }, [graphData.nodes, reducedMotion, selectedNodeId]);
 
   const drawNode = useCallback(
     (
@@ -436,7 +439,6 @@ export const GraphCanvas = ({
       const runtimeNode = node as RuntimeNode;
       const x = runtimeNode.x ?? 0;
       const y = runtimeNode.y ?? 0;
-      const bubble = measureBubble(ctx, runtimeNode, locale, globalScale);
       const isSelected = runtimeNode.id === selectedNodeId;
       const isDimmedBySelection =
         Boolean(selectedNodeId) &&
@@ -450,6 +452,28 @@ export const GraphCanvas = ({
       const baseColor = getNodeColor(runtimeNode);
       const alpha =
         (isDimmedBySelection ? 0.25 : 1) * (isDimmedBySearch ? 0.25 : 1);
+
+      // LOD: 強いズームアウト時はテキスト計測・描画を省略する
+      // （ノード数百規模でのフレーム落ち対策。文字は読めない倍率なので情報損失はない）
+      if (globalScale < 0.45 && !isSelected) {
+        const lodWidth = runtimeNode.visualWidth ?? 56;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = baseColor;
+        drawRoundedRect(
+          ctx,
+          x - lodWidth / 2,
+          y - BUBBLE_HEIGHT / 2,
+          lodWidth,
+          BUBBLE_HEIGHT,
+          runtimeNode.kind === 'application' ? 7 : 15
+        );
+        ctx.fill();
+        ctx.restore();
+        return;
+      }
+
+      const bubble = measureBubble(ctx, runtimeNode, locale, globalScale);
       const bubbleX = x - bubble.width / 2;
       const bubbleY = y - bubble.height / 2;
 
@@ -545,7 +569,9 @@ export const GraphCanvas = ({
         nodeId="id"
         nodeRelSize={0}
         linkDirectionalParticles={0}
-        cooldownTicks={120}
+        // reduced-motion 時はレイアウトを事前計算し、整列アニメーションを表示しない
+        warmupTicks={reducedMotion ? 150 : 0}
+        cooldownTicks={reducedMotion ? 0 : 120}
         onNodeClick={handleNodeClick}
         onBackgroundClick={onBackgroundClick}
         nodeCanvasObject={drawNode}
