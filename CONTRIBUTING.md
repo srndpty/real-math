@@ -9,6 +9,8 @@
 
 ## セットアップ
 
+前提: Node.js 22.12 以上（`.nvmrc` 参照。Vite 7 と commitlint v21 の要件）
+
 ```bash
 npm ci
 npm run dev
