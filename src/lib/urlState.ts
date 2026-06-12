@@ -38,6 +38,8 @@ export const withNodeId = (
   return next;
 };
 
+// kindFilter / industryFilter に null を渡すとパラメータを削除する
+// （デフォルト状態のフィルタを URL に載せないために使う）
 export const withFilters = (
   searchParams: URLSearchParams,
   {
@@ -46,8 +48,8 @@ export const withFilters = (
     industryFilter
   }: {
     query: string;
-    kindFilter: Set<string>;
-    industryFilter: Set<string>;
+    kindFilter: Set<string> | null;
+    industryFilter: Set<string> | null;
   }
 ): URLSearchParams => {
   const next = new URLSearchParams(searchParams.toString());
@@ -58,13 +60,13 @@ export const withFilters = (
     next.delete(SEARCH_QUERY_KEY);
   }
 
-  if (kindFilter.size > 0) {
+  if (kindFilter && kindFilter.size > 0) {
     next.set(KIND_FILTER_KEY, Array.from(kindFilter).sort().join(','));
   } else {
     next.delete(KIND_FILTER_KEY);
   }
 
-  if (industryFilter.size > 0) {
+  if (industryFilter && industryFilter.size > 0) {
     next.set(INDUSTRY_FILTER_KEY, Array.from(industryFilter).sort().join(','));
   } else {
     next.delete(INDUSTRY_FILTER_KEY);

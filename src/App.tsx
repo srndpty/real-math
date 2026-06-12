@@ -20,7 +20,7 @@ import { useNodeSelection } from './hooks/useNodeSelection';
 import type { Locale } from './content/types';
 import { isSupportedLocale } from './lib/graph';
 import { createAdjacencyIndex, getHighlightedNodeIds } from './lib/graph';
-import { withNodeId, withFilters } from './lib/urlState';
+import { withNodeId } from './lib/urlState';
 
 // KaTeX（数式描画）を含むため、ノード選択時まで読み込みを遅延する
 const DetailPanel = lazy(() =>
@@ -53,26 +53,10 @@ const AppPage = () => {
     () => new Map(graphContent.nodes.map((node) => [node.id, node])),
     []
   );
-  const {
-    searchParams,
-    setSearchParams,
-    selectedNode,
-    selectNode,
-    closePanel,
-    panelTitleRef
-  } = useNodeSelection(nodesById);
+  const { searchParams, selectedNode, selectNode, closePanel, panelTitleRef } =
+    useNodeSelection(nodesById);
 
   const locale: Locale = isSupportedLocale(localeParam) ? localeParam : 'ja';
-
-  // URL 同期: フィルタ変更時に URL を更新
-  useEffect(() => {
-    const newParams = withFilters(searchParams, {
-      query,
-      kindFilter,
-      industryFilter
-    });
-    setSearchParams(newParams, { replace: true });
-  }, [query, kindFilter, industryFilter, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!isSupportedLocale(localeParam)) {

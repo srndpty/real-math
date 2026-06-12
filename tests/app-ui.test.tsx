@@ -79,6 +79,26 @@ describe('App UI flow', () => {
     expect(screen.getByText('Search Nodes')).toBeInTheDocument();
   });
 
+  it('restores search query and kind filter from shared URL', () => {
+    renderApp('/ja?q=%E5%BE%AE%E5%88%86&kind=pure_concept');
+
+    expect(
+      screen.getByRole('button', { name: 'ノード詳細を開く: 微分' })
+    ).toBeInTheDocument();
+    // application ノードは kind=pure_concept で除外される
+    expect(
+      screen.queryByRole('button', { name: 'ノード詳細を開く: 機械学習' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('ignores invalid filter values in URL and falls back to defaults', () => {
+    renderApp('/ja?kind=bogus_kind&ind=bogus_industry');
+
+    expect(
+      screen.getByRole('button', { name: 'ノード詳細を開く: 機械学習' })
+    ).toBeInTheDocument();
+  });
+
   it('uses bottom sheet on mobile viewport', () => {
     Object.defineProperty(window, 'innerWidth', {
       configurable: true,

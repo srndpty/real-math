@@ -106,14 +106,16 @@
 
 ## Phase 2: 機能・スケール対応（1〜2ヶ月）
 
-**P2-1. URL 状態の完全化**
+**P2-1. URL 状態の完全化** — ✅ 2026-06-12 実装済み
 検索クエリ・kind/industry フィルタを URL クエリへ載せ、共有 URL で画面状態を完全再現（既存の `?node=` と統合）。
 
-**P2-2. SEO/OGP（既存ロードマップ P0 と整合）**
+- `?q=` / `?kind=` / `?ind=` を `useGraphFilters` が読み書きする。デフォルト状態ではパラメータを載せず URL を汚さない。不正値はデフォルトにフォールバック
 
-- ノード詳細の静的ページ生成（vite-ssg もしくはビルド時プリレンダ）
-- OGP メタ・sitemap.xml・robots.txt・構造化データ (JSON-LD)
-- GitHub Pages 利用時は SPA リライト、もしくは SSG 化で解消
+**P2-2. SEO/OGP（既存ロードマップ P0 と整合）** — ⚠️ 部分実装（2026-06-12）
+
+- ✅ react-helmet-async によるメタタグ・OGP・canonical・JSON-LD の動的生成
+- ✅ robots.txt / sitemap.xml（`public/`。**ドメイン確定後にプレースホルダ `real-math.example.com` の置換が必要**）
+- ❌ 未実装: ノード詳細の静的ページ生成（vite-ssg / プリレンダ）。**SPA のクライアントサイド meta 更新は、JS を実行しない OGP クローラー（Slack/X/LINE 等）には見えない**ため、ノード単位の OGP を効かせるにはプリレンダが必須。残タスクとして保留
 
 **P2-3. グラフ機能拡張（既存ロードマップ P1）**
 
