@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 import {
   Navigate,
   Route,
@@ -19,7 +20,7 @@ import { useNodeSelection } from './hooks/useNodeSelection';
 import type { Locale } from './content/types';
 import { isSupportedLocale } from './lib/graph';
 import { createAdjacencyIndex, getHighlightedNodeIds } from './lib/graph';
-import { withNodeId } from './lib/urlState';
+import { withNodeId, withFilters } from './lib/urlState';
 
 // KaTeX（数式描画）を含むため、ノード選択時まで読み込みを遅延する
 const DetailPanel = lazy(() =>
@@ -52,10 +53,26 @@ const AppPage = () => {
     () => new Map(graphContent.nodes.map((node) => [node.id, node])),
     []
   );
-  const { searchParams, selectedNode, selectNode, closePanel, panelTitleRef } =
-    useNodeSelection(nodesById);
+  const {
+    searchParams,
+    setSearchParams,
+    selectedNode,
+    selectNode,
+    closePanel,
+    panelTitleRef
+  } = useNodeSelection(nodesById);
 
   const locale: Locale = isSupportedLocale(localeParam) ? localeParam : 'ja';
+
+  // URL 同期: フィルタ変更時に URL を更新
+  useEffect(() => {
+    const newParams = withFilters(searchParams, {
+      query,
+      kindFilter,
+      industryFilter
+    });
+    setSearchParams(newParams, { replace: true });
+  }, [query, kindFilter, industryFilter, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!isSupportedLocale(localeParam)) {
@@ -82,8 +99,40 @@ const AppPage = () => {
 
   const shareUrl = `${window.location.origin}/${locale}?${withNodeId(searchParams, selectedNode?.id ?? null).toString()}`;
 
+  const pageTitle = selectedNode
+    ? `${selectedNode.labels[locale]} | Real Math Map`
+    : 'Real Math Map';
+
+  const pageDescription = selectedNode
+    ? selectedNode.shortSummary[locale]
+    : t('app.subtitle');
+
+  const structuredData = selectedNode
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Thing',
+        name: selectedNode.labels[locale],
+        description: selectedNode.shortSummary[locale],
+        url: shareUrl
+      }
+    : null;
+
   return (
     <div className="bg-app min-h-screen">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={shareUrl} />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href={shareUrl} />
+        {structuredData && (
+          <script type="application/ld+json">
+            {JSON.stringify(structuredData)}
+          </script>
+        )}
+      </Helmet>
       <header className="mx-auto w-full max-w-[1600px] px-4 pt-4 pb-2 lg:px-6">
         <div className="rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">

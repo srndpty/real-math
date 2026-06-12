@@ -45,6 +45,7 @@ export const useNodeSelection = (nodesById: Map<string, GraphNode>) => {
 
   return {
     searchParams,
+    setSearchParams,
     selectedNode,
     selectNode,
     closePanel,
