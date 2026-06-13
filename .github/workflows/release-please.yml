@@ -13,6 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: googleapis/release-please-action@5a86462a201d297e9f70b1cdca723b21da60b0fc # v4.4
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4
         with:
           release-type: node
