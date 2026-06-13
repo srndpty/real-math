@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { HelmetProvider } from 'react-helmet-async';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
@@ -32,9 +33,11 @@ vi.mock('react-force-graph-2d', () => ({
 
 const renderApp = (route: string) =>
   render(
-    <MemoryRouter initialEntries={[route]}>
-      <App />
-    </MemoryRouter>
+    <HelmetProvider>
+      <MemoryRouter initialEntries={[route]}>
+        <App />
+      </MemoryRouter>
+    </HelmetProvider>
   );
 
 beforeEach(() => {
