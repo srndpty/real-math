@@ -25,6 +25,9 @@
   "engines": {
     "node": ">=22.12.0"
   },
+  "overrides": {
+    "esbuild": "0.28.1"
+  },
   "size-limit": [
     {
       "name": "initial JS (index + vendor chunks, gzip)",
