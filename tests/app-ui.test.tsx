@@ -57,6 +57,7 @@ describe('App UI flow', () => {
     expect(
       await screen.findByRole('heading', { name: '微分' })
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '微分' })).toHaveFocus();
     expect(
       screen.getAllByRole('button', { name: '積分' }).length
     ).toBeGreaterThan(0);

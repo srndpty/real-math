@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { GraphNode } from '../content/types';
 import { getNodeIdFromSearch, withNodeId } from '../lib/urlState';
@@ -7,21 +7,38 @@ export const useNodeSelection = (nodesById: Map<string, GraphNode>) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const panelTitleRef = useRef<HTMLHeadingElement | null>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const wasSelectedRef = useRef(false);
 
   const selectedNodeId = getNodeIdFromSearch(searchParams);
   const selectedNode = selectedNodeId
     ? (nodesById.get(selectedNodeId) ?? null)
     : null;
 
+  const setPanelTitleRef = useCallback(
+    (element: HTMLHeadingElement | null) => {
+      panelTitleRef.current = element;
+      if (element && selectedNode) {
+        element.focus();
+      }
+    },
+    [selectedNode]
+  );
+
   useEffect(() => {
-    if (selectedNode) {
+    if (selectedNode && !wasSelectedRef.current) {
       lastFocusedRef.current =
         document.activeElement instanceof HTMLElement
           ? document.activeElement
           : null;
-      window.setTimeout(() => panelTitleRef.current?.focus(), 0);
+    }
+
+    if (selectedNode) {
+      wasSelectedRef.current = true;
+      panelTitleRef.current?.focus();
       return;
     }
+
+    wasSelectedRef.current = false;
     lastFocusedRef.current?.focus();
   }, [selectedNode]);
 
@@ -49,6 +66,6 @@ export const useNodeSelection = (nodesById: Map<string, GraphNode>) => {
     selectedNode,
     selectNode,
     closePanel,
-    panelTitleRef
+    panelTitleRef: setPanelTitleRef
   };
 };

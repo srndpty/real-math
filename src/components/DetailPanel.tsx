@@ -18,7 +18,7 @@ type DetailPanelProps = {
   onClose: () => void;
   onSelectNode: (nodeId: string) => void;
   shareUrl: string;
-  panelTitleRef: React.RefObject<HTMLHeadingElement | null>;
+  panelTitleRef: React.Ref<HTMLHeadingElement>;
 };
 
 export const DetailPanel = ({
