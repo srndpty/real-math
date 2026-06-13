@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { forceCollide, forceManyBody } from 'd3-force';
 import ForceGraph2D from 'react-force-graph-2d';
 import type {
@@ -24,6 +24,7 @@ type GraphCanvasProps = {
   highlightedNodeIds: Set<string>;
   searchMatchedNodeIds: Set<string>;
   isSearchActive: boolean;
+  reducedMotion?: boolean;
   onSelectNode: (nodeId: string) => void;
   onBackgroundClick: () => void;
 };
@@ -219,6 +220,70 @@ const getRoundedRectBoundaryDistance = (
   return projection + Math.sqrt(discriminant);
 };
 
+const getArrowRelPos = (runtimeEdge: RuntimeEdge): number => {
+  const source = resolveNode(runtimeEdge.source);
+  const target = resolveNode(runtimeEdge.target);
+  if (
+    !source ||
+    !target ||
+    typeof source.x !== 'number' ||
+    typeof source.y !== 'number' ||
+    typeof target.x !== 'number' ||
+    typeof target.y !== 'number'
+  ) {
+    return 0.93;
+  }
+
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const centerDistance = Math.hypot(dx, dy);
+  if (centerDistance < 1) {
+    return 0.9;
+  }
+
+  const targetBoundaryDistance = getRoundedRectBoundaryDistance(
+    source.x - target.x,
+    source.y - target.y,
+    (target.visualWidth ?? 56) / 2,
+    (target.visualHeight ?? BUBBLE_HEIGHT) / 2,
+    getNodeCornerRadius(target)
+  );
+  const arrowLength = getArrowLengthByRelation(runtimeEdge.relation);
+  const availableLineLength = centerDistance - arrowLength;
+  if (availableLineLength <= 0) {
+    return 1;
+  }
+
+  const arrowHeadDistance = centerDistance - targetBoundaryDistance;
+  const relPos = (arrowHeadDistance - arrowLength) / availableLineLength;
+  return clamp(relPos, 0, 1);
+};
+
+const getLinkDistance = (edge: ForceGraphLink): number => {
+  const runtimeEdge = edge as RuntimeEdge;
+  const source = resolveNode(runtimeEdge.source);
+  const target = resolveNode(runtimeEdge.target);
+  const sourceRadius = source?.collisionRadius ?? 28;
+  const targetRadius = target?.collisionRadius ?? 28;
+  return sourceRadius + targetRadius + EXTRA_LINK_GAP;
+};
+
+const getRenderedEdgeWidth = (edge: ForceGraphLink): number => {
+  const runtimeEdge = edge as RuntimeEdge;
+  const source = resolveNode(runtimeEdge.source);
+  const target = resolveNode(runtimeEdge.target);
+  return getEdgeWidth(runtimeEdge, source, target);
+};
+
+const getRenderedLinkDash = (edge: ForceGraphLink): number[] | null =>
+  getRelationDash((edge as RuntimeEdge).relation);
+
+const getRenderedArrowLength = (edge: ForceGraphLink): number =>
+  getArrowLengthByRelation((edge as RuntimeEdge).relation);
+
+const getRenderedArrowRelPos = (edge: ForceGraphLink): number =>
+  getArrowRelPos(edge as RuntimeEdge);
+
 export const GraphCanvas = ({
   locale,
   nodes,
@@ -227,6 +292,7 @@ export const GraphCanvas = ({
   highlightedNodeIds,
   searchMatchedNodeIds,
   isSearchActive,
+  reducedMotion = false,
   onSelectNode,
   onBackgroundClick
 }: GraphCanvasProps) => {
@@ -275,76 +341,33 @@ export const GraphCanvas = ({
     [edges, locale, nodes]
   );
 
-  const getRenderedEdgeColor = (runtimeEdge: RuntimeEdge): string => {
-    const source = resolveNode(runtimeEdge.source);
-    const target = resolveNode(runtimeEdge.target);
-    const sourceId = source?.id ?? String(runtimeEdge.source);
-    const targetId = target?.id ?? String(runtimeEdge.target);
-    const isDimmedBySelection =
-      Boolean(selectedNodeId) &&
-      highlightedNodeIds.size > 0 &&
-      (!highlightedNodeIds.has(sourceId) || !highlightedNodeIds.has(targetId));
+  const getRenderedEdgeColor = useCallback(
+    (edge: ForceGraphLink): string => {
+      const runtimeEdge = edge as RuntimeEdge;
+      const source = resolveNode(runtimeEdge.source);
+      const target = resolveNode(runtimeEdge.target);
+      const sourceId = source?.id ?? String(runtimeEdge.source);
+      const targetId = target?.id ?? String(runtimeEdge.target);
+      const isDimmedBySelection =
+        Boolean(selectedNodeId) &&
+        highlightedNodeIds.size > 0 &&
+        (!highlightedNodeIds.has(sourceId) ||
+          !highlightedNodeIds.has(targetId));
 
-    const baseColor = isSearchActive
-      ? '#334155'
-      : getEdgeColor(runtimeEdge, source, target);
+      const baseColor = isSearchActive
+        ? '#334155'
+        : getEdgeColor(runtimeEdge, source, target);
 
-    if (isDimmedBySelection) {
-      return `${baseColor}55`;
-    }
-    if (isSearchActive) {
-      return `${baseColor}CC`;
-    }
-    return baseColor;
-  };
-
-  const getArrowRelPos = (runtimeEdge: RuntimeEdge): number => {
-    const source = resolveNode(runtimeEdge.source);
-    const target = resolveNode(runtimeEdge.target);
-    if (
-      !source ||
-      !target ||
-      typeof source.x !== 'number' ||
-      typeof source.y !== 'number' ||
-      typeof target.x !== 'number' ||
-      typeof target.y !== 'number'
-    ) {
-      return 0.93;
-    }
-
-    const dx = target.x - source.x;
-    const dy = target.y - source.y;
-    const centerDistance = Math.hypot(dx, dy);
-    if (centerDistance < 1) {
-      return 0.9;
-    }
-
-    const targetBoundaryDistance = getRoundedRectBoundaryDistance(
-      source.x - target.x,
-      source.y - target.y,
-      (target.visualWidth ?? 56) / 2,
-      (target.visualHeight ?? BUBBLE_HEIGHT) / 2,
-      getNodeCornerRadius(target)
-    );
-    const arrowLength = getArrowLengthByRelation(runtimeEdge.relation);
-    const availableLineLength = centerDistance - arrowLength;
-    if (availableLineLength <= 0) {
-      return 1;
-    }
-
-    const arrowHeadDistance = centerDistance - targetBoundaryDistance;
-    const relPos = (arrowHeadDistance - arrowLength) / availableLineLength;
-    return clamp(relPos, 0, 1);
-  };
-
-  const getLinkDistance = (edge: ForceGraphLink): number => {
-    const runtimeEdge = edge as RuntimeEdge;
-    const source = resolveNode(runtimeEdge.source);
-    const target = resolveNode(runtimeEdge.target);
-    const sourceRadius = source?.collisionRadius ?? 28;
-    const targetRadius = target?.collisionRadius ?? 28;
-    return sourceRadius + targetRadius + EXTRA_LINK_GAP;
-  };
+      if (isDimmedBySelection) {
+        return `${baseColor}55`;
+      }
+      if (isSearchActive) {
+        return `${baseColor}CC`;
+      }
+      return baseColor;
+    },
+    [highlightedNodeIds, isSearchActive, selectedNodeId]
+  );
 
   useEffect(() => {
     if (!graphRef.current) {
@@ -370,10 +393,10 @@ export const GraphCanvas = ({
     }
     hasInitialFitRef.current = true;
     const timerId = window.setTimeout(() => {
-      graphRef.current?.zoomToFit(500, 64);
+      graphRef.current?.zoomToFit(reducedMotion ? 0 : 500, 64);
     }, 280);
     return () => window.clearTimeout(timerId);
-  }, [graphData]);
+  }, [graphData, reducedMotion]);
 
   useEffect(() => {
     if (!selectedNodeId || !graphRef.current) {
@@ -391,10 +414,11 @@ export const GraphCanvas = ({
       ) {
         return false;
       }
+      const duration = reducedMotion ? 0 : 400;
       const currentZoom = graphRef.current?.zoom();
-      graphRef.current?.centerAt(targetNode.x, targetNode.y, 400);
+      graphRef.current?.centerAt(targetNode.x, targetNode.y, duration);
       if (typeof currentZoom === 'number') {
-        graphRef.current?.zoom(currentZoom, 400);
+        graphRef.current?.zoom(currentZoom, duration);
       }
       return true;
     };
@@ -404,7 +428,132 @@ export const GraphCanvas = ({
     }
     const timerId = window.setTimeout(centerSelectedNode, 120);
     return () => window.clearTimeout(timerId);
-  }, [graphData.nodes, selectedNodeId]);
+  }, [graphData.nodes, reducedMotion, selectedNodeId]);
+
+  const drawNode = useCallback(
+    (
+      node: ForceGraphNode,
+      ctx: CanvasRenderingContext2D,
+      globalScale: number
+    ) => {
+      const runtimeNode = node as RuntimeNode;
+      const x = runtimeNode.x ?? 0;
+      const y = runtimeNode.y ?? 0;
+      const isSelected = runtimeNode.id === selectedNodeId;
+      const isDimmedBySelection =
+        Boolean(selectedNodeId) &&
+        highlightedNodeIds.size > 0 &&
+        !highlightedNodeIds.has(runtimeNode.id);
+      const isDimmedBySearch =
+        isSearchActive &&
+        !isSelected &&
+        !searchMatchedNodeIds.has(runtimeNode.id);
+
+      const baseColor = getNodeColor(runtimeNode);
+      const alpha =
+        (isDimmedBySelection ? 0.25 : 1) * (isDimmedBySearch ? 0.25 : 1);
+
+      // LOD: 強いズームアウト時はテキスト計測・描画を省略する
+      // （ノード数百規模でのフレーム落ち対策。文字は読めない倍率なので情報損失はない）
+      if (globalScale < 0.45 && !isSelected) {
+        const lodWidth = runtimeNode.visualWidth ?? 56;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = baseColor;
+        drawRoundedRect(
+          ctx,
+          x - lodWidth / 2,
+          y - BUBBLE_HEIGHT / 2,
+          lodWidth,
+          BUBBLE_HEIGHT,
+          runtimeNode.kind === 'application' ? 7 : 15
+        );
+        ctx.fill();
+        ctx.restore();
+        return;
+      }
+
+      const bubble = measureBubble(ctx, runtimeNode, locale, globalScale);
+      const bubbleX = x - bubble.width / 2;
+      const bubbleY = y - bubble.height / 2;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = baseColor;
+      ctx.strokeStyle =
+        runtimeNode.kind === 'pure_concept' ? PURE_CONCEPT_BORDER : '#111827';
+      ctx.lineWidth = isSelected ? 3 : 1.5;
+
+      drawRoundedRect(
+        ctx,
+        bubbleX,
+        bubbleY,
+        bubble.width,
+        bubble.height,
+        runtimeNode.kind === 'application' ? 7 : 15
+      );
+      ctx.fill();
+      ctx.stroke();
+
+      if (isSelected) {
+        ctx.save();
+        ctx.strokeStyle = '#11182755';
+        ctx.lineWidth = 6;
+        drawRoundedRect(
+          ctx,
+          bubbleX - 2,
+          bubbleY - 2,
+          bubble.width + 4,
+          bubble.height + 4,
+          runtimeNode.kind === 'application' ? 8 : 16
+        );
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.font = `600 ${bubble.fontSize}px "IBM Plex Sans", "Noto Sans JP", sans-serif`;
+      ctx.fillStyle = getContrastTextColor(baseColor);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(bubble.label, x, y + 0.5);
+      ctx.restore();
+    },
+    [
+      highlightedNodeIds,
+      isSearchActive,
+      locale,
+      searchMatchedNodeIds,
+      selectedNodeId
+    ]
+  );
+
+  const paintNodePointerArea = useCallback(
+    (node: ForceGraphNode, color: string, ctx: CanvasRenderingContext2D) => {
+      const runtimeNode = node as RuntimeNode;
+      const x = runtimeNode.x ?? 0;
+      const y = runtimeNode.y ?? 0;
+      const bubble = measureBubble(ctx, runtimeNode, locale);
+      const bubbleX = x - bubble.width / 2;
+      const bubbleY = y - bubble.height / 2;
+
+      ctx.fillStyle = color;
+      drawRoundedRect(
+        ctx,
+        bubbleX,
+        bubbleY,
+        bubble.width,
+        bubble.height,
+        runtimeNode.kind === 'application' ? 7 : 15
+      );
+      ctx.fill();
+    },
+    [locale]
+  );
+
+  const handleNodeClick = useCallback(
+    (node: ForceGraphNode) => onSelectNode((node as RuntimeNode).id),
+    [onSelectNode]
+  );
 
   return (
     <div
@@ -420,115 +569,21 @@ export const GraphCanvas = ({
         nodeId="id"
         nodeRelSize={0}
         linkDirectionalParticles={0}
-        cooldownTicks={120}
-        onNodeClick={(node) => onSelectNode((node as RuntimeNode).id)}
+        // reduced-motion 時はレイアウトを事前計算し、整列アニメーションを表示しない
+        warmupTicks={reducedMotion ? 150 : 0}
+        cooldownTicks={reducedMotion ? 0 : 120}
+        onNodeClick={handleNodeClick}
         onBackgroundClick={onBackgroundClick}
-        nodeCanvasObject={(node, ctx, globalScale) => {
-          const runtimeNode = node as RuntimeNode;
-          const x = runtimeNode.x ?? 0;
-          const y = runtimeNode.y ?? 0;
-          const bubble = measureBubble(ctx, runtimeNode, locale, globalScale);
-          const isSelected = runtimeNode.id === selectedNodeId;
-          const isDimmedBySelection =
-            Boolean(selectedNodeId) &&
-            highlightedNodeIds.size > 0 &&
-            !highlightedNodeIds.has(runtimeNode.id);
-          const isDimmedBySearch =
-            isSearchActive &&
-            !isSelected &&
-            !searchMatchedNodeIds.has(runtimeNode.id);
-
-          const baseColor = getNodeColor(runtimeNode);
-          const alpha =
-            (isDimmedBySelection ? 0.25 : 1) * (isDimmedBySearch ? 0.25 : 1);
-          const bubbleX = x - bubble.width / 2;
-          const bubbleY = y - bubble.height / 2;
-
-          ctx.save();
-          ctx.globalAlpha = alpha;
-          ctx.fillStyle = baseColor;
-          ctx.strokeStyle =
-            runtimeNode.kind === 'pure_concept'
-              ? PURE_CONCEPT_BORDER
-              : '#111827';
-          ctx.lineWidth = isSelected ? 3 : 1.5;
-
-          drawRoundedRect(
-            ctx,
-            bubbleX,
-            bubbleY,
-            bubble.width,
-            bubble.height,
-            runtimeNode.kind === 'application' ? 7 : 15
-          );
-          ctx.fill();
-          ctx.stroke();
-
-          if (isSelected) {
-            ctx.save();
-            ctx.strokeStyle = '#11182755';
-            ctx.lineWidth = 6;
-            drawRoundedRect(
-              ctx,
-              bubbleX - 2,
-              bubbleY - 2,
-              bubble.width + 4,
-              bubble.height + 4,
-              runtimeNode.kind === 'application' ? 8 : 16
-            );
-            ctx.stroke();
-            ctx.restore();
-          }
-
-          ctx.font = `600 ${bubble.fontSize}px "IBM Plex Sans", "Noto Sans JP", sans-serif`;
-          ctx.fillStyle = getContrastTextColor(baseColor);
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(bubble.label, x, y + 0.5);
-          ctx.restore();
-        }}
-        nodePointerAreaPaint={(node, color, ctx) => {
-          const runtimeNode = node as RuntimeNode;
-          const x = runtimeNode.x ?? 0;
-          const y = runtimeNode.y ?? 0;
-          const bubble = measureBubble(ctx, runtimeNode, locale);
-          const bubbleX = x - bubble.width / 2;
-          const bubbleY = y - bubble.height / 2;
-
-          ctx.fillStyle = color;
-          drawRoundedRect(
-            ctx,
-            bubbleX,
-            bubbleY,
-            bubble.width,
-            bubble.height,
-            runtimeNode.kind === 'application' ? 7 : 15
-          );
-          ctx.fill();
-        }}
-        linkColor={(edge) => {
-          const runtimeEdge = edge as RuntimeEdge;
-          return getRenderedEdgeColor(runtimeEdge);
-        }}
-        linkWidth={(edge) => {
-          const runtimeEdge = edge as RuntimeEdge;
-          const source = resolveNode(runtimeEdge.source);
-          const target = resolveNode(runtimeEdge.target);
-          return getEdgeWidth(runtimeEdge, source, target);
-        }}
-        linkLineDash={(edge) => getRelationDash((edge as RuntimeEdge).relation)}
-        linkDirectionalArrowLength={(edge) =>
-          getArrowLengthByRelation((edge as RuntimeEdge).relation)
-        }
-        linkDirectionalArrowRelPos={(edge) =>
-          getArrowRelPos(edge as RuntimeEdge)
-        }
+        nodeCanvasObject={drawNode}
+        nodePointerAreaPaint={paintNodePointerArea}
+        linkColor={getRenderedEdgeColor}
+        linkWidth={getRenderedEdgeWidth}
+        linkLineDash={getRenderedLinkDash}
+        linkDirectionalArrowLength={getRenderedArrowLength}
+        linkDirectionalArrowRelPos={getRenderedArrowRelPos}
         d3AlphaDecay={0.03}
         d3VelocityDecay={0.25}
-        linkDirectionalArrowColor={(edge) => {
-          const runtimeEdge = edge as RuntimeEdge;
-          return getRenderedEdgeColor(runtimeEdge);
-        }}
+        linkDirectionalArrowColor={getRenderedEdgeColor}
       />
     </div>
   );

@@ -1,0 +1,31 @@
+name: バグ報告
+description: 動作不良・表示崩れなどの報告
+labels: ['bug']
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 何が起きたか
+      description: 期待した動作と実際の動作
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      placeholder: |
+        1. /ja を開く
+        2. 「微分」を検索する
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: 発生した URL
+      placeholder: /ja?node=finite_field
+  - type: input
+    id: environment
+    attributes:
+      label: 環境
+      placeholder: 'Windows 11 / Chrome 137 / 画面幅 1920px'

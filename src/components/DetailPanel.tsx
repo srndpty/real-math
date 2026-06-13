@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
 import { useTranslation } from 'react-i18next';
 import type { GraphEdge, GraphNode, Locale } from '../content/types';
@@ -17,7 +18,7 @@ type DetailPanelProps = {
   onClose: () => void;
   onSelectNode: (nodeId: string) => void;
   shareUrl: string;
-  panelTitleRef: React.RefObject<HTMLHeadingElement | null>;
+  panelTitleRef: React.Ref<HTMLHeadingElement>;
 };
 
 export const DetailPanel = ({

@@ -52,6 +52,7 @@ npm run lint
 npm run typecheck
 npm run validate:content
 npm run test
+npm run test:coverage
 npm run test:e2e
 ```
 
@@ -60,6 +61,10 @@ npm run test:e2e
 ```bash
 npm run check
 ```
+
+## コントリビューション
+
+開発フロー・コミット規約（Conventional Commits）・Git フックについては `CONTRIBUTING.md` を参照してください。
 
 ## コンテンツ追加方法
 
@@ -101,12 +106,27 @@ npm run check
 └─ .github/workflows/ci.yml
 ```
 
-## デプロイ候補
+## デプロイ（Vercel）
 
-- Vercel (Vite静的配信)
-- Netlify
-- Cloudflare Pages
-- GitHub Pages (SPAリライト設定が必要)
+`vercel.json` に SPA リライトとセキュリティヘッダ（CSP 等）を定義済み。初回セットアップ:
+
+1. [vercel.com](https://vercel.com) で GitHub リポジトリを Import（Framework: Vite が自動検出される）
+2. 以降は main への push で本番デプロイ、PR ごとにプレビューデプロイが自動生成される
+
+### エラー監視（Sentry）
+
+Vercel の環境変数に `VITE_SENTRY_DSN` を設定すると有効になる（未設定ならコードごと配信されない）。
+`browserTracingIntegration` により Web Vitals (LCP/CLS/INP) も収集される。
+
+## パフォーマンス予算
+
+- `npm run size` で初期 JS / 遅延チャンクのサイズ予算を検証（CI でも実行）
+- バンドル内訳の分析: `$env:ANALYZE=1; npm run build` → `dist/stats.html`
+- Lighthouse CI が PR ごとにスコア回帰を検査（`lighthouserc.json`）
+
+## リリース
+
+main へのマージ後、release-please が Conventional Commits からリリース PR（バージョンバンプ + CHANGELOG）を自動作成する。リリース PR をマージすると GitHub Release とタグが切られる。
 
 ## 今後の課題
 

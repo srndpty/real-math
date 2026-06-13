@@ -1,52 +1,70 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import {
   Navigate,
   Route,
   Routes,
   useNavigate,
-  useParams,
-  useSearchParams
+  useParams
 } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { DetailPanel } from './components/DetailPanel';
 import { GraphCanvas } from './components/GraphCanvas';
 import { Legend } from './components/Legend';
 import { NodeList } from './components/NodeList';
 import { SearchFilters } from './components/SearchFilters';
-import { graphContent } from './content/loadContent';
-import { INDUSTRY_CATEGORIES, type Locale } from './content/types';
-import {
-  createAdjacencyIndex,
-  filterGraph,
-  getNodeSearchText,
-  getHighlightedNodeIds,
-  isSupportedLocale
-} from './lib/graph';
-import { getNodeIdFromSearch, withNodeId } from './lib/urlState';
+import { ErrorFallback } from './components/ErrorBoundary';
+import { contentLoadError, graphContent } from './content/loadContent';
+import { useFocusTrap } from './hooks/useFocusTrap';
+import { useGraphFilters } from './hooks/useGraphFilters';
+import { useIsMobile } from './hooks/useIsMobile';
+import { usePrefersReducedMotion } from './hooks/useMediaQuery';
+import { useNodeSelection } from './hooks/useNodeSelection';
+import type { Locale } from './content/types';
+import { isSupportedLocale } from './lib/graph';
+import { createAdjacencyIndex, getHighlightedNodeIds } from './lib/graph';
 
-const DEFAULT_KIND_FILTER = new Set<'pure_concept' | 'application'>([
-  'pure_concept',
-  'application'
-]);
-const DEFAULT_INDUSTRY_FILTER = new Set<string>(INDUSTRY_CATEGORIES);
+// KaTeX（数式描画）を含むため、ノード選択時まで読み込みを遅延する
+const DetailPanel = lazy(() =>
+  import('./components/DetailPanel').then((module) => ({
+    default: module.DetailPanel
+  }))
+);
 
 const AppPage = () => {
   const { locale: localeParam } = useParams<{ locale: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
+  const isMobile = useIsMobile();
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const panelShellRef = useRef<HTMLDivElement | null>(null);
 
-  const [query, setQuery] = useState('');
-  const [kindFilter, setKindFilter] = useState<
-    Set<'pure_concept' | 'application'>
-  >(() => new Set(DEFAULT_KIND_FILTER));
-  const [industryFilter, setIndustryFilter] = useState<Set<string>>(
-    () => new Set(DEFAULT_INDUSTRY_FILTER)
+  const {
+    query,
+    setQuery,
+    kindFilter,
+    industryFilter,
+    relationFilter,
+    filtered,
+    isSearchActive,
+    searchMatchedNodeIds,
+    listedNodes,
+    toggleKind,
+    toggleIndustry,
+    toggleRelation,
+    resetFilters
+  } = useGraphFilters();
+  const [neighborDepth, setNeighborDepth] = useState<1 | 2>(1);
+
+  const nodesById = useMemo(
+    () => new Map(graphContent.nodes.map((node) => [node.id, node])),
+    []
   );
-  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 1024);
+  const { searchParams, selectedNode, selectNode, closePanel, panelTitleRef } =
+    useNodeSelection(nodesById);
 
-  const panelTitleRef = useRef<HTMLHeadingElement | null>(null);
-  const lastFocusedRef = useRef<HTMLElement | null>(null);
+  // モバイルのボトムシートはオーバーレイ付きのモーダル表示になるため、
+  // 表示中は Tab フォーカスをパネル内へ閉じ込める
+  useFocusTrap(panelShellRef, Boolean(selectedNode) && isMobile);
 
   const locale: Locale = isSupportedLocale(localeParam) ? localeParam : 'ja';
 
@@ -60,131 +78,61 @@ const AppPage = () => {
     void i18n.changeLanguage(locale);
   }, [i18n, locale]);
 
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  const selectedNodeId = getNodeIdFromSearch(searchParams);
-
-  const nodesById = useMemo(
-    () => new Map(graphContent.nodes.map((node) => [node.id, node])),
-    []
-  );
-  const selectedNode = selectedNodeId
-    ? (nodesById.get(selectedNodeId) ?? null)
-    : null;
-
-  const filtered = useMemo(
-    () =>
-      filterGraph({
-        content: graphContent,
-        // Keep graph topology stable while typing in search.
-        query: '',
-        kindFilter,
-        industryFilter
-      }),
-    [industryFilter, kindFilter]
-  );
-  const isSearchActive = query.trim().length > 0;
-  const searchMatchedNodeIds = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) {
-      return new Set<string>();
-    }
-    return new Set(
-      filtered.nodes
-        .filter((node) => getNodeSearchText(node).includes(normalizedQuery))
-        .map((node) => node.id)
-    );
-  }, [filtered.nodes, query]);
-  const listedNodes = useMemo(() => {
-    if (!isSearchActive) {
-      return filtered.nodes;
-    }
-    return filtered.nodes.filter((node) =>
-      searchMatchedNodeIds.has(node.id)
-    );
-  }, [filtered.nodes, isSearchActive, searchMatchedNodeIds]);
-
   const adjacency = useMemo(
     () => createAdjacencyIndex(filtered.edges),
     [filtered.edges]
   );
   const highlightedNodeIds = useMemo(
-    () => getHighlightedNodeIds(selectedNode?.id ?? null, adjacency),
-    [adjacency, selectedNode?.id]
+    () =>
+      getHighlightedNodeIds(selectedNode?.id ?? null, adjacency, neighborDepth),
+    [adjacency, neighborDepth, selectedNode?.id]
   );
-
-  useEffect(() => {
-    if (selectedNode) {
-      lastFocusedRef.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      window.setTimeout(() => panelTitleRef.current?.focus(), 0);
-      return;
-    }
-    lastFocusedRef.current?.focus();
-  }, [selectedNode]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && selectedNode) {
-        setSearchParams(withNodeId(searchParams, null), { replace: true });
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [searchParams, selectedNode, setSearchParams]);
-
-  const selectNode = (nodeId: string) => {
-    setSearchParams(withNodeId(searchParams, nodeId), { replace: true });
-  };
-
-  const closePanel = () => {
-    setSearchParams(withNodeId(searchParams, null), { replace: true });
-  };
-
-  const toggleKind = (kind: 'pure_concept' | 'application') => {
-    setKindFilter((prev) => {
-      const next = new Set(prev);
-      if (next.has(kind)) {
-        next.delete(kind);
-      } else {
-        next.add(kind);
-      }
-      return next.size === 0 ? new Set(DEFAULT_KIND_FILTER) : next;
-    });
-  };
-
-  const toggleIndustry = (industry: string) => {
-    setIndustryFilter((prev) => {
-      const next = new Set(prev);
-      if (next.has(industry)) {
-        next.delete(industry);
-      } else {
-        next.add(industry);
-      }
-      return next.size === 0 ? new Set(DEFAULT_INDUSTRY_FILTER) : next;
-    });
-  };
-
-  const resetFilters = () => {
-    setQuery('');
-    setKindFilter(new Set(DEFAULT_KIND_FILTER));
-    setIndustryFilter(new Set(DEFAULT_INDUSTRY_FILTER));
-  };
 
   const switchLocale = (nextLocale: Locale) => {
     void navigate(`/${nextLocale}?${searchParams.toString()}`);
   };
 
-  const shareUrl = `${window.location.origin}/${locale}?${withNodeId(searchParams, selectedNode?.id ?? null).toString()}`;
+  // 共有 URL はプリレンダ済みのパス形式（/:locale/node/:id）を正とする。
+  // OGP クローラーは JS を実行しないため、静的 HTML が存在するこの形式でないと
+  // ノード単位のメタタグが解決されない。
+  const shareUrl = selectedNode
+    ? `${window.location.origin}/${locale}/node/${selectedNode.id}`
+    : `${window.location.origin}/${locale}`;
+
+  const pageTitle = selectedNode
+    ? `${selectedNode.labels[locale]} | Real Math Map`
+    : 'Real Math Map';
+
+  const pageDescription = selectedNode
+    ? selectedNode.shortSummary[locale]
+    : t('app.subtitle');
+
+  const structuredData = selectedNode
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Thing',
+        name: selectedNode.labels[locale],
+        description: selectedNode.shortSummary[locale],
+        url: shareUrl
+      }
+    : null;
 
   return (
     <div className="bg-app min-h-screen">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={shareUrl} />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href={shareUrl} />
+        {structuredData && (
+          <script type="application/ld+json">
+            {JSON.stringify(structuredData)}
+          </script>
+        )}
+      </Helmet>
       <header className="mx-auto w-full max-w-[1600px] px-4 pt-4 pb-2 lg:px-6">
         <div className="rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -223,6 +171,8 @@ const AppPage = () => {
             onToggleKind={toggleKind}
             industryFilter={industryFilter}
             onToggleIndustry={toggleIndustry}
+            relationFilter={relationFilter}
+            onToggleRelation={toggleRelation}
             onReset={resetFilters}
           />
           <Legend />
@@ -248,10 +198,34 @@ const AppPage = () => {
               highlightedNodeIds={highlightedNodeIds}
               searchMatchedNodeIds={searchMatchedNodeIds}
               isSearchActive={isSearchActive}
+              reducedMotion={prefersReducedMotion}
               onSelectNode={selectNode}
               onBackgroundClick={closePanel}
             />
           </div>
+
+          {selectedNode && (
+            <div className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-lg border border-slate-200 bg-white/95 px-2 py-1 text-xs shadow-sm">
+              <span className="font-semibold text-slate-600">
+                {t('controls.neighborDepth')}
+              </span>
+              {([1, 2] as const).map((depth) => (
+                <button
+                  key={depth}
+                  type="button"
+                  aria-pressed={neighborDepth === depth}
+                  onClick={() => setNeighborDepth(depth)}
+                  className={`rounded-md border px-2 py-0.5 ${
+                    neighborDepth === depth
+                      ? 'border-sky-700 bg-sky-50 text-sky-800'
+                      : 'border-slate-300 bg-white text-slate-600'
+                  }`}
+                >
+                  {t(`controls.depth${depth}`)}
+                </button>
+              ))}
+            </div>
+          )}
 
           {selectedNode && (
             <>
@@ -264,19 +238,22 @@ const AppPage = () => {
                 />
               )}
               <div
+                ref={panelShellRef}
                 data-testid="detail-panel-shell"
                 className="fixed inset-x-0 bottom-0 z-30 h-[56vh] overflow-hidden rounded-t-2xl border border-slate-200 bg-white lg:absolute lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[44%] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:border-l"
               >
-                <DetailPanel
-                  locale={locale}
-                  node={selectedNode}
-                  allEdges={graphContent.edges}
-                  nodesById={nodesById}
-                  onClose={closePanel}
-                  onSelectNode={selectNode}
-                  shareUrl={shareUrl}
-                  panelTitleRef={panelTitleRef}
-                />
+                <Suspense fallback={null}>
+                  <DetailPanel
+                    locale={locale}
+                    node={selectedNode}
+                    allEdges={graphContent.edges}
+                    nodesById={nodesById}
+                    onClose={closePanel}
+                    onSelectNode={selectNode}
+                    shareUrl={shareUrl}
+                    panelTitleRef={panelTitleRef}
+                  />
+                </Suspense>
               </div>
             </>
           )}
@@ -286,10 +263,37 @@ const AppPage = () => {
   );
 };
 
-export const App = () => (
-  <Routes>
-    <Route path="/" element={<Navigate to="/ja" replace />} />
-    <Route path="/:locale" element={<AppPage />} />
-    <Route path="*" element={<Navigate to="/ja" replace />} />
-  </Routes>
-);
+// プリレンダ済みのパス形式 URL（/:locale/node/:id）を SPA 上では
+// 既存のクエリ形式（/:locale?node=:id）へ正規化する
+const NodeRouteRedirect = () => {
+  const { locale: localeParam, nodeId } = useParams<{
+    locale: string;
+    nodeId: string;
+  }>();
+  const locale = isSupportedLocale(localeParam) ? localeParam : 'ja';
+  const search = nodeId ? `?node=${encodeURIComponent(nodeId)}` : '';
+  return <Navigate to={`/${locale}${search}`} replace />;
+};
+
+export const App = () => {
+  if (contentLoadError) {
+    return (
+      <ErrorFallback
+        title="コンテンツを読み込めませんでした / Failed to load content"
+        description="graph-content.json がスキーマ検証に失敗しました。詳細は開発者コンソールを確認してください。 / graph-content.json failed schema validation. See the developer console for details."
+        detail={contentLoadError.issues
+          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+          .join('\n')}
+      />
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/ja" replace />} />
+      <Route path="/:locale" element={<AppPage />} />
+      <Route path="/:locale/node/:nodeId" element={<NodeRouteRedirect />} />
+      <Route path="*" element={<Navigate to="/ja" replace />} />
+    </Routes>
+  );
+};

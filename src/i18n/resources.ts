@@ -10,9 +10,13 @@ export const resources = {
         searchPlaceholder: '例: 微分 / Fourier / QR',
         typeFilter: '種別フィルタ',
         industryFilter: '産業カテゴリ',
+        relationFilter: 'エッジ種別',
         kindConcept: '数学概念',
         kindApplication: '応用',
-        reset: '絞り込み解除'
+        reset: '絞り込み解除',
+        neighborDepth: '近傍表示',
+        depth1: '1ホップ',
+        depth2: '2ホップ'
       },
       industry: {
         civil_engineering: '土木工学',
@@ -93,9 +97,13 @@ export const resources = {
         searchPlaceholder: 'e.g. derivative / Fourier / QR',
         typeFilter: 'Type Filter',
         industryFilter: 'Industry Filter',
+        relationFilter: 'Edge Type',
         kindConcept: 'Math Concept',
         kindApplication: 'Application',
-        reset: 'Reset Filters'
+        reset: 'Reset Filters',
+        neighborDepth: 'Neighborhood',
+        depth1: '1 hop',
+        depth2: '2 hops'
       },
       industry: {
         civil_engineering: 'Civil Engineering',

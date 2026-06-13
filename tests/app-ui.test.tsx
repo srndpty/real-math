@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { HelmetProvider } from 'react-helmet-async';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
@@ -32,9 +33,11 @@ vi.mock('react-force-graph-2d', () => ({
 
 const renderApp = (route: string) =>
   render(
-    <MemoryRouter initialEntries={[route]}>
-      <App />
-    </MemoryRouter>
+    <HelmetProvider>
+      <MemoryRouter initialEntries={[route]}>
+        <App />
+      </MemoryRouter>
+    </HelmetProvider>
   );
 
 beforeEach(() => {
@@ -51,7 +54,10 @@ describe('App UI flow', () => {
     renderApp('/ja');
 
     await user.click(screen.getByRole('button', { name: '微分' }));
-    expect(screen.getByRole('heading', { name: '微分' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: '微分' })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '微分' })).toHaveFocus();
     expect(
       screen.getAllByRole('button', { name: '積分' }).length
     ).toBeGreaterThan(0);
@@ -62,10 +68,10 @@ describe('App UI flow', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('supports deep link opening of node detail', () => {
+  it('supports deep link opening of node detail', async () => {
     renderApp('/ja?node=machine_learning_app');
     expect(
-      screen.getByRole('heading', { name: '機械学習' })
+      await screen.findByRole('heading', { name: '機械学習' })
     ).toBeInTheDocument();
   });
 
@@ -75,6 +81,26 @@ describe('App UI flow', () => {
 
     await user.click(screen.getByRole('button', { name: 'English' }));
     expect(screen.getByText('Search Nodes')).toBeInTheDocument();
+  });
+
+  it('restores search query and kind filter from shared URL', () => {
+    renderApp('/ja?q=%E5%BE%AE%E5%88%86&kind=pure_concept');
+
+    expect(
+      screen.getByRole('button', { name: 'ノード詳細を開く: 微分' })
+    ).toBeInTheDocument();
+    // application ノードは kind=pure_concept で除外される
+    expect(
+      screen.queryByRole('button', { name: 'ノード詳細を開く: 機械学習' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('ignores invalid filter values in URL and falls back to defaults', () => {
+    renderApp('/ja?kind=bogus_kind&ind=bogus_industry');
+
+    expect(
+      screen.getByRole('button', { name: 'ノード詳細を開く: 機械学習' })
+    ).toBeInTheDocument();
   });
 
   it('uses bottom sheet on mobile viewport', () => {

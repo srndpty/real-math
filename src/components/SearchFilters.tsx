@@ -1,4 +1,8 @@
-import { INDUSTRY_CATEGORIES } from '../content/types';
+import {
+  EDGE_RELATIONS,
+  INDUSTRY_CATEGORIES,
+  type EdgeRelation
+} from '../content/types';
 import { INDUSTRY_COLORS } from './graphStyle';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +13,8 @@ type SearchFiltersProps = {
   onToggleKind: (kind: 'pure_concept' | 'application') => void;
   industryFilter: Set<string>;
   onToggleIndustry: (industry: string) => void;
+  relationFilter: Set<EdgeRelation>;
+  onToggleRelation: (relation: EdgeRelation) => void;
   onReset: () => void;
 };
 
@@ -19,6 +25,8 @@ export const SearchFilters = ({
   onToggleKind,
   industryFilter,
   onToggleIndustry,
+  relationFilter,
+  onToggleRelation,
   onReset
 }: SearchFiltersProps) => {
   const { t } = useTranslation();
@@ -90,6 +98,31 @@ export const SearchFilters = ({
                 }`}
               >
                 {t(`industry.${industry}`, { defaultValue: industry })}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
+          {t('controls.relationFilter')}
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {EDGE_RELATIONS.map((relation) => {
+            const active = relationFilter.has(relation);
+            return (
+              <button
+                key={relation}
+                type="button"
+                onClick={() => onToggleRelation(relation)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                  active
+                    ? 'border-slate-700 bg-slate-100 text-slate-900'
+                    : 'border-slate-300 bg-white text-slate-500'
+                }`}
+              >
+                {t(`relation.${relation}`)}
               </button>
             );
           })}
