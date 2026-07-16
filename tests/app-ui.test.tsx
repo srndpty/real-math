@@ -5,6 +5,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
 
+const forceGraphDataHistory = vi.hoisted(
+  () => [] as { nodes: unknown[]; links: unknown[] }[]
+);
+
 vi.mock('react-force-graph-2d', () => ({
   default: ({
     graphData,
@@ -17,18 +21,25 @@ vi.mock('react-force-graph-2d', () => ({
     };
     onNodeClick?: (node: { id: string }) => void;
     onBackgroundClick?: () => void;
-  }) => (
-    <div data-testid="force-graph-mock">
-      <button type="button" onClick={() => onBackgroundClick?.()}>
-        background
-      </button>
-      {graphData.nodes.map((node) => (
-        <button key={node.id} type="button" onClick={() => onNodeClick?.(node)}>
-          {node.labels.ja}
+  }) => {
+    forceGraphDataHistory.push(graphData);
+    return (
+      <div data-testid="force-graph-mock">
+        <button type="button" onClick={() => onBackgroundClick?.()}>
+          background
         </button>
-      ))}
-    </div>
-  )
+        {graphData.nodes.map((node) => (
+          <button
+            key={node.id}
+            type="button"
+            onClick={() => onNodeClick?.(node)}
+          >
+            {node.labels.ja}
+          </button>
+        ))}
+      </div>
+    );
+  }
 }));
 
 const renderApp = (route: string) =>
@@ -41,6 +52,7 @@ const renderApp = (route: string) =>
   );
 
 beforeEach(() => {
+  forceGraphDataHistory.length = 0;
   window.history.replaceState({}, '', '/');
   Object.defineProperty(window, 'innerWidth', {
     configurable: true,
@@ -78,9 +90,11 @@ describe('App UI flow', () => {
   it('switches locale via route controls', async () => {
     const user = userEvent.setup();
     renderApp('/ja');
+    const initialGraphData = forceGraphDataHistory.at(-1);
 
     await user.click(screen.getByRole('button', { name: 'English' }));
     expect(screen.getByText('Search Nodes')).toBeInTheDocument();
+    expect(forceGraphDataHistory.at(-1)).toBe(initialGraphData);
   });
 
   it('restores search query and kind filter from shared URL', () => {

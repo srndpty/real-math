@@ -147,9 +147,6 @@ const estimateStableNodeWidth = (node: GraphNode): number =>
     estimateBubbleWidth(node.labels.en)
   );
 
-const estimateNodeWidth = (node: GraphNode, locale: Locale): number =>
-  estimateBubbleWidth(node.labels[locale]);
-
 const getArrowLengthByRelation = (relation: GraphEdge['relation']): number => {
   switch (relation) {
     case 'enables':
@@ -323,14 +320,13 @@ export const GraphCanvas = ({
   const graphData = useMemo(
     () => ({
       nodes: nodes.map((node) => {
-        const estimatedWidth = estimateNodeWidth(node, locale);
         const stableWidth = estimateStableNodeWidth(node);
-        const visualRadius = Math.max(estimatedWidth / 2, BUBBLE_HEIGHT / 2);
+        const visualRadius = Math.max(stableWidth / 2, BUBBLE_HEIGHT / 2);
         const collisionRadius =
           Math.max(stableWidth / 2, BUBBLE_HEIGHT / 2) + COLLISION_PADDING;
         return {
           ...node,
-          visualWidth: estimatedWidth,
+          visualWidth: stableWidth,
           visualHeight: BUBBLE_HEIGHT,
           visualRadius,
           collisionRadius
@@ -338,7 +334,7 @@ export const GraphCanvas = ({
       }),
       links: edges
     }),
-    [edges, locale, nodes]
+    [edges, nodes]
   );
 
   const getRenderedEdgeColor = useCallback(
