@@ -279,7 +279,7 @@ const getRenderedArrowLength = (edge: ForceGraphLink): number =>
   getArrowLengthByRelation((edge as RuntimeEdge).relation);
 
 const getRenderedArrowRelPos = (edge: ForceGraphLink): number =>
-  getArrowRelPos(edge as RuntimeEdge);
+  getArrowRelPos(edge);
 
 export const GraphCanvas = ({
   locale,
