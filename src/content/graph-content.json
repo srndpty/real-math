@@ -304,32 +304,50 @@
       "id": "finite_field",
       "kind": "pure_concept",
       "labels": { "ja": "有限体", "en": "Finite Field" },
-      "aliases": ["Galois Field", "GF"],
+      "aliases": ["Galois Field", "GF", "ガロア体"],
       "shortSummary": {
-        "ja": "有限集合上の代数構造。",
-        "en": "Algebra over finite sets."
+        "ja": "有限個の要素で加減乗除が閉じる代数構造。",
+        "en": "Algebra where addition, subtraction, multiplication, and division stay within a finite set."
       },
       "friendlyExplanation": {
-        "ja": "誤り訂正と暗号の実装で重要です。",
-        "en": "Critical in error correction and cryptography."
+        "ja": "数が有限でも四則演算がきちんと定義できる世界で、誤り訂正や暗号の回路実装を支えます。",
+        "en": "A world with finitely many numbers that still supports field arithmetic, underpinning error-correction and crypto hardware."
       },
       "detailedExplanation": {
-        "ja": "GF(2^m) が現場実装で多用されます。",
-        "en": "GF(2^m) is widely used in practical systems."
+        "ja": "特に GF(2^8)=GF(256) は、8ビット（白黒8セル）を1要素とみなせるため、QRコードのリード・ソロモン符号などで使われます。加減乗除が桁あふれなく閉じるため、電子回路でも扱いやすいです。",
+        "en": "GF(2^8)=GF(256) maps cleanly onto 8-bit symbols, so it appears in Reed-Solomon coding for QR codes and similar systems. Closed arithmetic without carry overflow also simplifies hardware design."
       },
-      "mathNotationLatex": { "inline": ["\\mathrm{GF}(2^m)"] },
-      "keywords": [{ "ja": "符号理論", "en": "coding theory" }],
+      "mathNotationLatex": {
+        "inline": ["\\mathrm{GF}(2^m)", "\\mathrm{GF}(256)"],
+        "block": ["\\mathrm{GF}(p^n)=\\mathbb{F}_{p^n}"]
+      },
+      "keywords": [
+        { "ja": "符号理論", "en": "coding theory" },
+        { "ja": "ガロア体", "en": "Galois field" }
+      ],
       "references": [
         {
           "title": "Error Control Coding",
           "url": "https://www.pearson.com/en-us/subject-catalog/p/error-control-coding/P200000003576/9780132837965"
+        },
+        {
+          "title": "中日新聞: 自動車工場のガロア体 — QRコードはどう動くか",
+          "url": "https://static.chunichi.co.jp/chunichi/pages/feature/science/galois_field_in_auto_factory.html",
+          "note": {
+            "ja": "自動車工場のカンバン要件から QR と有限体の関係を解説。",
+            "en": "Explains finite fields via QR codes born from automotive factory needs."
+          }
+        },
+        {
+          "title": "Chunichi: Galois Field in Auto Factory — How QR Code Works",
+          "url": "https://static.chunichi.co.jp/chunichi/pages/feature/science/galois_field_in_auto_factory.en.html"
         }
       ],
-      "tags": ["algebra"],
+      "tags": ["algebra", "coding-theory"],
       "difficultyLevel": 5,
       "utilityProfile": "indirect",
       "certaintyLevel": "high",
-      "status": "reviewed"
+      "status": "draft"
     },
     {
       "id": "curvature",
@@ -398,56 +416,128 @@
       "kind": "application",
       "industryCategory": "information_theory",
       "labels": { "ja": "誤り訂正", "en": "Error Correction" },
-      "aliases": ["ECC"],
+      "aliases": ["ECC", "誤り訂正符号"],
       "shortSummary": {
         "ja": "壊れたデータを復元する技術。",
         "en": "Technology for recovering corrupted data."
       },
       "friendlyExplanation": {
-        "ja": "ノイズがあっても通信・保存の信頼性を保ちます。",
-        "en": "Keeps communication and storage reliable under noise."
+        "ja": "ノイズや汚れがあっても、通信・保存・読み取りの信頼性を保ちます。",
+        "en": "Keeps communication, storage, and scanning reliable under noise or damage."
       },
       "detailedExplanation": {
-        "ja": "Reed-Solomon などの符号が実装されます。",
-        "en": "Implemented with practical codes such as Reed-Solomon."
+        "ja": "リード・ソロモン符号など、有限体上の多項式演算を使う符号が広く実装されます。訂正したい位置と修正量を推定するため、訂正能力のおよそ2倍の検査記号を付けます。",
+        "en": "Practical codes such as Reed-Solomon use polynomial arithmetic over finite fields. Roughly twice as many check symbols as correctable errors are needed to locate and fix damaged symbols."
       },
-      "keywords": [{ "ja": "符号理論", "en": "coding theory" }],
-      "references": [
-        { "title": "IEEE ITSoc", "url": "https://www.itsoc.org/" }
+      "keywords": [
+        { "ja": "符号理論", "en": "coding theory" },
+        { "ja": "リード・ソロモン", "en": "Reed-Solomon" }
       ],
-      "tags": ["reliability"],
+      "references": [
+        { "title": "IEEE ITSoc", "url": "https://www.itsoc.org/" },
+        {
+          "title": "DENSO WAVE: Error correction feature",
+          "url": "https://www.qrcode.com/en/about/error_correction.html"
+        }
+      ],
+      "tags": ["reliability", "coding-theory"],
       "difficultyLevel": 4,
       "utilityProfile": "direct",
       "certaintyLevel": "high",
-      "status": "reviewed"
+      "status": "draft"
+    },
+    {
+      "id": "reed_solomon",
+      "kind": "method",
+      "labels": { "ja": "リード・ソロモン符号", "en": "Reed-Solomon Code" },
+      "aliases": ["RS code", "Reed Solomon"],
+      "shortSummary": {
+        "ja": "有限体上の多項式で誤りを直す符号。",
+        "en": "Error-correcting code based on polynomials over a finite field."
+      },
+      "friendlyExplanation": {
+        "ja": "データを多項式の係数とみなし、余りの検査記号を付けて読み取り誤りを直します。",
+        "en": "Treats data as polynomial coefficients and appends remainder check symbols to repair read errors."
+      },
+      "detailedExplanation": {
+        "ja": "1960年に提案され、QRコードでは GF(256) 上で符号化されます。CD・DVD・放送・ストレージなどでも使われ、デジタル機器の「劣化しない」印象を支える基盤です。",
+        "en": "Proposed in 1960 and used over GF(256) in QR codes. It also appears in CDs, DVDs, broadcast, and storage, quietly underpinning the idea that digital data does not degrade."
+      },
+      "mathNotationLatex": {
+        "inline": ["\\mathrm{RS}", "\\mathrm{GF}(256)"],
+        "block": ["g(x)=\\prod_{i=0}^{2t-1}(x-\\alpha^{i})"]
+      },
+      "keywords": [
+        { "ja": "誤り訂正", "en": "error correction" },
+        { "ja": "有限体", "en": "finite field" }
+      ],
+      "references": [
+        {
+          "title": "DENSO WAVE: Error correction feature",
+          "url": "https://www.qrcode.com/en/about/error_correction.html"
+        },
+        {
+          "title": "中日新聞: 自動車工場のガロア体 — QRコードはどう動くか",
+          "url": "https://static.chunichi.co.jp/chunichi/pages/feature/science/galois_field_in_auto_factory.html",
+          "note": {
+            "ja": "QR におけるリード・ソロモン符号とガロア体の役割を解説。",
+            "en": "Explains Reed-Solomon and Galois fields in QR decoding."
+          }
+        }
+      ],
+      "tags": ["coding-theory"],
+      "difficultyLevel": 4,
+      "utilityProfile": "direct",
+      "certaintyLevel": "high",
+      "status": "draft"
     },
     {
       "id": "qr_code",
       "kind": "application",
-      "industryCategory": "logistics",
+      "industryCategory": "manufacturing",
       "labels": { "ja": "QRコード", "en": "QR Code" },
-      "aliases": ["Quick Response Code"],
+      "aliases": ["Quick Response Code", "二次元コード"],
       "shortSummary": {
-        "ja": "誤り耐性を持つ2次元コード。",
-        "en": "Error-tolerant 2D code."
+        "ja": "自動車工場発の誤り耐性2次元コード。",
+        "en": "Error-tolerant 2D code born in automotive factories."
       },
       "friendlyExplanation": {
-        "ja": "汚れや欠損があっても読める設計です。",
-        "en": "Designed to remain readable despite damage."
+        "ja": "油汚れや欠損があっても読めるよう、ガロア体上のリード・ソロモン符号で誤り訂正します。",
+        "en": "Uses Reed-Solomon coding over a Galois field so codes remain readable despite oil, dirt, or damage."
       },
       "detailedExplanation": {
-        "ja": "物流、決済、認証で広く使われます。",
-        "en": "Used in logistics, payments, and authentication."
+        "ja": "1990年代前半にデンソーがトヨタ系生産現場のカンバン管理向けに開発しました。8セル単位を GF(256) の要素として符号化し、物流・決済・認証まで広がっています。",
+        "en": "Developed at Denso in the early 1990s for Toyota-group kanban tracking. Eight-cell symbols are encoded as GF(256) elements, and the format later spread to logistics, payments, and authentication."
       },
-      "keywords": [{ "ja": "物流", "en": "logistics" }],
-      "references": [
-        { "title": "QRcode.com", "url": "https://www.qrcode.com/en/" }
+      "keywords": [
+        { "ja": "製造", "en": "manufacturing" },
+        { "ja": "物流", "en": "logistics" },
+        { "ja": "ガロア体", "en": "Galois field" }
       ],
-      "tags": ["daily-life"],
+      "references": [
+        { "title": "QRcode.com", "url": "https://www.qrcode.com/en/" },
+        {
+          "title": "DENSO: QR Code invented by DENSO",
+          "url": "https://www.denso.com/global/en/technology/qrcode/"
+        },
+        {
+          "title": "中日新聞: 自動車工場のガロア体 — QRコードはどう動くか",
+          "url": "https://static.chunichi.co.jp/chunichi/pages/feature/science/galois_field_in_auto_factory.html",
+          "note": {
+            "ja": "自動車工場の要請とガロア体・誤り訂正のつながりを解説。",
+            "en": "Links automotive factory needs to Galois fields and error correction."
+          }
+        },
+        {
+          "title": "Chunichi: Galois Field in Auto Factory — How QR Code Works",
+          "url": "https://static.chunichi.co.jp/chunichi/pages/feature/science/galois_field_in_auto_factory.en.html"
+        }
+      ],
+      "tags": ["daily-life", "manufacturing", "coding-theory"],
       "difficultyLevel": 2,
       "utilityProfile": "direct",
       "certaintyLevel": "high",
-      "status": "reviewed"
+      "status": "draft"
     },
     {
       "id": "raid6",
@@ -743,10 +833,42 @@
       "relation": "used_in"
     },
     {
+      "id": "edge-finite-rs",
+      "source": "finite_field",
+      "target": "reed_solomon",
+      "relation": "enables",
+      "note": {
+        "ja": "GF(256) 上の多項式演算が符号化の土台。",
+        "en": "Polynomial arithmetic over GF(256) underpins encoding."
+      }
+    },
+    {
       "id": "edge-finite-crypto",
       "source": "finite_field",
       "target": "cryptography_app",
       "relation": "used_in"
+    },
+    {
+      "id": "edge-rs-err",
+      "source": "reed_solomon",
+      "target": "error_correction",
+      "relation": "example_of"
+    },
+    {
+      "id": "edge-rs-qr",
+      "source": "reed_solomon",
+      "target": "qr_code",
+      "relation": "used_in",
+      "note": {
+        "ja": "油汚れなどに耐える誤り訂正に利用。",
+        "en": "Provides dirt-tolerant error correction."
+      }
+    },
+    {
+      "id": "edge-rs-raid",
+      "source": "reed_solomon",
+      "target": "raid6",
+      "relation": "related_to"
     },
     {
       "id": "edge-err-qr",
@@ -759,6 +881,16 @@
       "source": "error_correction",
       "target": "raid6",
       "relation": "enables"
+    },
+    {
+      "id": "edge-finite-qr",
+      "source": "finite_field",
+      "target": "qr_code",
+      "relation": "used_in",
+      "note": {
+        "ja": "8セル記号をガロア体の要素として扱う。",
+        "en": "Treats 8-cell symbols as Galois-field elements."
+      }
     },
     {
       "id": "edge-fourier-audio",
